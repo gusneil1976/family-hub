@@ -1,0 +1,214 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  BarChart3,
+  CheckSquare,
+  ClipboardCheck,
+  History,
+  Home,
+  ListChecks,
+  ListTodo,
+  LogOut,
+  ShieldCheck,
+  Trophy,
+  User,
+  UtensilsCrossed,
+  Users,
+} from "lucide-react";
+import { signOut } from "./actions";
+
+type IconType = React.ComponentType<{ className?: string }>;
+
+type NavItem = {
+  label: string;
+  href: string;
+  icon: IconType;
+  match: (pathname: string) => boolean;
+};
+
+const exact = (href: string) => (pathname: string) => pathname === href;
+
+const MEAL_VOTE_NAV: NavItem[] = [
+  { label: "Vote", href: "/meal-vote/vote", icon: CheckSquare, match: exact("/meal-vote/vote") },
+  { label: "Results", href: "/meal-vote/results", icon: Trophy, match: exact("/meal-vote/results") },
+  {
+    label: "Meals",
+    href: "/meal-vote/meals",
+    icon: UtensilsCrossed,
+    match: (p) => p.startsWith("/meal-vote/meals"),
+  },
+];
+
+const HOUSE_TASKS_NAV: NavItem[] = [
+  {
+    label: "Tasks",
+    href: "/house-tasks",
+    icon: ListTodo,
+    match: (p) =>
+      p === "/house-tasks" ||
+      p.startsWith("/house-tasks/new") ||
+      /^\/house-tasks\/[^/]+\/edit$/.test(p),
+  },
+  {
+    label: "Completed",
+    href: "/house-tasks/completed",
+    icon: History,
+    match: exact("/house-tasks/completed"),
+  },
+  {
+    label: "Scoreboard",
+    href: "/house-tasks/scoreboard",
+    icon: BarChart3,
+    match: exact("/house-tasks/scoreboard"),
+  },
+];
+
+function SidebarLink({
+  href,
+  active,
+  icon: Icon,
+  label,
+}: {
+  href: string;
+  active: boolean;
+  icon: IconType;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
+        active
+          ? "bg-accent text-accent-foreground"
+          : "text-sidebar-foreground hover:bg-white/10"
+      }`}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      {label}
+    </Link>
+  );
+}
+
+export function Sidebar({
+  email,
+  isAdmin,
+  isHouseTasksAdmin,
+}: {
+  email: string | null;
+  isAdmin: boolean;
+  isHouseTasksAdmin: boolean;
+}) {
+  const pathname = usePathname();
+  const inMealVote = pathname.startsWith("/meal-vote");
+  const inHouseTasks = pathname.startsWith("/house-tasks");
+
+  const contextNav: NavItem[] = inMealVote
+    ? [
+        ...MEAL_VOTE_NAV,
+        ...(isAdmin
+          ? [
+              {
+                label: "Admin",
+                href: "/meal-vote/admin/shortlist",
+                icon: ShieldCheck,
+                match: (p: string) => p.startsWith("/meal-vote/admin"),
+              },
+            ]
+          : []),
+      ]
+    : inHouseTasks
+      ? [
+          ...HOUSE_TASKS_NAV,
+          ...(isAdmin || isHouseTasksAdmin
+            ? [
+                {
+                  label: "Approvals",
+                  href: "/house-tasks/admin/approvals",
+                  icon: ClipboardCheck,
+                  match: exact("/house-tasks/admin/approvals"),
+                },
+              ]
+            : []),
+        ]
+      : [];
+
+  return (
+    <aside className="flex w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground print:hidden">
+      <Link
+        href="/"
+        className="flex items-center gap-2 px-4 py-4 font-semibold text-white"
+      >
+        <Home className="h-5 w-5 text-accent" />
+        Family Hub
+      </Link>
+
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2">
+        <p className="mt-2 px-2 text-xs font-semibold uppercase tracking-wide text-sidebar-muted">
+          Apps
+        </p>
+        <SidebarLink
+          href="/meal-vote"
+          active={inMealVote}
+          icon={UtensilsCrossed}
+          label="Meals"
+        />
+        <SidebarLink
+          href="/house-tasks"
+          active={inHouseTasks}
+          icon={ListChecks}
+          label="House Tasks"
+        />
+
+        {contextNav.length > 0 && (
+          <>
+            <p className="mt-4 px-2 text-xs font-semibold uppercase tracking-wide text-sidebar-muted">
+              {inMealVote ? "Meal Vote" : "House Tasks"}
+            </p>
+            {contextNav.map((item) => (
+              <SidebarLink
+                key={item.href}
+                href={item.href}
+                active={item.match(pathname)}
+                icon={item.icon}
+                label={item.label}
+              />
+            ))}
+          </>
+        )}
+      </nav>
+
+      <div className="flex flex-col gap-1 border-t border-white/10 px-2 py-3">
+        {isAdmin && (
+          <SidebarLink
+            href="/admin/users"
+            active={pathname === "/admin/users"}
+            icon={Users}
+            label="Manage family"
+          />
+        )}
+        <SidebarLink
+          href="/account"
+          active={pathname === "/account"}
+          icon={User}
+          label="Account"
+        />
+        {email && (
+          <p className="truncate px-2 py-1 text-xs text-sidebar-muted">
+            {email}
+          </p>
+        )}
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-white/10"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </button>
+        </form>
+      </div>
+    </aside>
+  );
+}

@@ -1,0 +1,27 @@
+import { requireAdmin } from "@/lib/auth";
+import type { Category } from "@/lib/types";
+import { MealForm } from "../meal-form";
+import { createMeal } from "./actions";
+
+export default async function NewMealPage() {
+  const { supabase } = await requireAdmin();
+
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("*")
+    .order("name")
+    .returns<Category[]>();
+
+  return (
+    <div>
+      <h1 className="mb-4 text-2xl font-bold text-foreground">
+        Add a meal
+      </h1>
+      <MealForm
+        action={createMeal}
+        categories={categories ?? []}
+        submitLabel="Add meal"
+      />
+    </div>
+  );
+}

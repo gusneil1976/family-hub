@@ -1,8 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf6f2;
+  --foreground: #1c1917;
+
+  --accent: #d97757;
+  --accent-hover: #c2653f;
+  --accent-foreground: #ffffff;
+  --accent-soft: #fbe9e2;
+  --accent-soft-foreground: #9a4a2e;
+
+  --sidebar: #1c1917;
+  --sidebar-foreground: #e7e5e4;
+  --sidebar-muted: #a8a29e;
+
+  --card: #ffffff;
+  --card-border: #e7e2dc;
 }
 
 @theme inline {
@@ -10,17 +23,30 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-foreground: var(--accent-soft-foreground);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
 }

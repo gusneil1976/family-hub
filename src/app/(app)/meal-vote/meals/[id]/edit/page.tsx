@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import type { Category, Ingredient, Meal } from "@/lib/types";
 import { MealForm } from "../../meal-form";
 import { updateMeal } from "./actions";
+import { DeleteMealButton } from "./delete-meal-button";
 
 export default async function EditMealPage({
   params,
@@ -47,6 +48,9 @@ export default async function EditMealPage({
         categories={categories ?? []}
         submitLabel="Save changes"
       />
+      <div className="mt-6 border-t border-neutral-200 pt-4">
+        <DeleteMealButton mealId={meal.id} />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { parseIngredientRows } from "../../parse-ingredients";
 import type { MealFormState } from "../../meal-form";
@@ -95,4 +96,20 @@ export async function updateMeal(
   }
 
   redirect(`/meal-vote/meals/${mealId}`);
+}
+
+export async function deleteMeal(mealId: string) {
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase.from("meals").delete().eq("id", mealId);
+
+  if (error) {
+    throw new Error(
+      error.message.toLowerCase().includes("foreign key")
+        ? "Can't delete — this meal has voting history. Use 'Exclude from voting' instead."
+        : error.message,
+    );
+  }
+
+  revalidatePath("/meal-vote/meals");
 }

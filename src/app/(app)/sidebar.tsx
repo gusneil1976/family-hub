@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   Palette,
+  Plane,
   ShieldCheck,
   Target,
   Trophy,
@@ -145,11 +146,13 @@ export function Sidebar({
   isAdmin,
   isHouseTasksAdmin,
   hasSpendTrackerAccess,
+  hasMiniBreaksAccess,
 }: {
   email: string | null;
   isAdmin: boolean;
   isHouseTasksAdmin: boolean;
   hasSpendTrackerAccess: boolean;
+  hasMiniBreaksAccess: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -157,6 +160,7 @@ export function Sidebar({
   const inMealVote = pathname.startsWith("/meal-vote");
   const inHouseTasks = pathname.startsWith("/house-tasks");
   const inSpendTracker = hasSpendTrackerAccess && pathname.startsWith("/spend-tracker");
+  const inMiniBreaks = hasMiniBreaksAccess && pathname.startsWith("/mini-breaks");
 
   if (pathname !== prevPathname) {
     setPrevPathname(pathname);
@@ -263,6 +267,14 @@ export function Sidebar({
             active={inSpendTracker}
             icon={Wallet}
             label="Spend Tracker"
+          />
+        )}
+        {hasMiniBreaksAccess && (
+          <SidebarLink
+            href="/mini-breaks"
+            active={inMiniBreaks}
+            icon={Plane}
+            label="Mini Breaks"
           />
         )}
 

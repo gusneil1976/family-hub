@@ -5,6 +5,7 @@ import { ArchiveToggle } from "./archive-toggle";
 import { CreateUserForm } from "./create-user-form";
 import { HouseTasksAdminToggle } from "./house-tasks-admin-toggle";
 import { InviteForm } from "./invite-form";
+import { MiniBreaksToggle } from "./mini-breaks-toggle";
 import { RemoveButton } from "./remove-button";
 import { SpendTrackerToggle } from "./spend-tracker-toggle";
 
@@ -76,6 +77,11 @@ export default async function ManageUsersPage() {
                   Spend tracker
                 </span>
               )}
+              {profile.has_mini_breaks_access && (
+                <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
+                  Mini breaks
+                </span>
+              )}
               {profile.id === currentUser.id && (
                 <span className="ml-2 text-neutral-400">(you)</span>
               )}
@@ -90,6 +96,10 @@ export default async function ManageUsersPage() {
                 <SpendTrackerToggle
                   userId={profile.id}
                   hasAccess={profile.has_spend_tracker_access}
+                />
+                <MiniBreaksToggle
+                  userId={profile.id}
+                  hasAccess={profile.has_mini_breaks_access}
                 />
                 <ArchiveToggle
                   userId={profile.id}

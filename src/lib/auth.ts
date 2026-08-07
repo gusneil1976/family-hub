@@ -56,3 +56,13 @@ export async function requireSpendTrackerAccess() {
   }
   return result;
 }
+
+// Same privacy model as requireSpendTrackerAccess — private to whoever has
+// this specific flag.
+export async function requireMiniBreaksAccess() {
+  const result = await requireUser();
+  if (!result.profile?.has_mini_breaks_access) {
+    redirect("/");
+  }
+  return result;
+}

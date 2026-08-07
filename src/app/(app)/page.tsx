@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ListChecks, UtensilsCrossed, Wallet } from "lucide-react";
+import { ListChecks, Plane, UtensilsCrossed, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 
@@ -23,17 +23,23 @@ const APPS = [
 export default async function HubPage() {
   const { profile } = await requireUser();
 
-  const apps = profile?.has_spend_tracker_access
-    ? [
-        ...APPS,
-        {
-          name: "Spend Tracker",
-          description: "Track current-account spending by category.",
-          href: "/spend-tracker",
-          icon: Wallet,
-        },
-      ]
-    : APPS;
+  const apps = [...APPS];
+  if (profile?.has_spend_tracker_access) {
+    apps.push({
+      name: "Spend Tracker",
+      description: "Track current-account spending by category.",
+      href: "/spend-tracker",
+      icon: Wallet,
+    });
+  }
+  if (profile?.has_mini_breaks_access) {
+    apps.push({
+      name: "Mini Breaks",
+      description: "Coming soon.",
+      href: "/mini-breaks",
+      icon: Plane,
+    });
+  }
 
   return (
     <div>

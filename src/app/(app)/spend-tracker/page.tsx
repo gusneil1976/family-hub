@@ -2,6 +2,8 @@ import Link from "next/link";
 import { requireSpendTrackerAccess } from "@/lib/auth";
 import { Badge, PageHeader, StatTile, StatTileRow } from "@/components/ui";
 import { formatGBP } from "./format";
+import { MonthPicker } from "./month-picker";
+import { monthDateRange, monthKey, parseMonth } from "./month-utils";
 
 type TransactionRow = {
   id: string;
@@ -13,24 +15,29 @@ type TransactionRow = {
   spender: { display_name: string | null } | null;
 };
 
-export default async function SpendTrackerPage() {
+export default async function SpendTrackerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
   const { supabase, user } = await requireSpendTrackerAccess();
+  const { month: monthParam } = await searchParams;
+  const { year, month } = parseMonth(monthParam);
+  const { startDate, endDate } = monthDateRange(year, month);
 
   const { data: transactions } = await supabase
     .from("spend_transactions")
     .select(
       "id, date, amount, spent_by, vendor:vendors(name), category:spend_categories(name), spender:profiles!spend_transactions_spent_by_fkey(display_name)",
     )
+    .gte("date", startDate)
+    .lt("date", endDate)
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .returns<TransactionRow[]>();
 
   const all = transactions ?? [];
-
-  const now = new Date();
-  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const thisMonth = all.filter((t) => t.date.startsWith(monthPrefix));
-  const thisMonthTotal = thisMonth.reduce((sum, t) => sum + t.amount, 0);
+  const total = all.reduce((sum, t) => sum + t.amount, 0);
 
   return (
     <div>
@@ -46,15 +53,17 @@ export default async function SpendTrackerPage() {
         }
       />
 
+      <div className="mb-4">
+        <MonthPicker value={monthKey(year, month)} />
+      </div>
+
       <StatTileRow>
-        <StatTile emphasize label="This month" value={formatGBP(thisMonthTotal)} />
-        <StatTile label="Transactions this month" value={thisMonth.length} />
+        <StatTile emphasize label="Total" value={formatGBP(total)} />
+        <StatTile label="Transactions" value={all.length} />
       </StatTileRow>
 
       {all.length === 0 ? (
-        <p className="text-sm text-neutral-500">
-          No transactions yet — add your first one.
-        </p>
+        <p className="text-sm text-neutral-500">No transactions this month.</p>
       ) : (
         <ul className="divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
           {all.map((t) => (

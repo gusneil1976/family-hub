@@ -15,6 +15,7 @@ import {
   Menu,
   Palette,
   ShieldCheck,
+  Target,
   Trophy,
   User,
   UtensilsCrossed,
@@ -61,6 +62,12 @@ const SPEND_TRACKER_NAV: NavItem[] = [
     href: "/spend-tracker/report",
     icon: BarChart3,
     match: exact("/spend-tracker/report"),
+  },
+  {
+    label: "Budgets",
+    href: "/spend-tracker/budgets",
+    icon: Target,
+    match: exact("/spend-tracker/budgets"),
   },
   {
     label: "Categories",

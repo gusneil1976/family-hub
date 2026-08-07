@@ -120,3 +120,11 @@ export type SpendTransaction = {
   spent_by: string;
   created_at: string;
 };
+
+export type SpendBudget = {
+  id: string;
+  category_id: string;
+  month: string;
+  amount: number;
+  created_at: string;
+};

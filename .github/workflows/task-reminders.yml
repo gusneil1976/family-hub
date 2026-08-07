@@ -10,6 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Call reminder endpoint
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/task-reminders" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          status=$(curl -s -o response.json -w "%{http_code}" -X GET "$APP_URL/api/cron/task-reminders" \
+            -H "Authorization: Bearer $CRON_SECRET")
+          echo "HTTP status: $status"
+          echo "Response body:"
+          cat response.json
+          if [ "$status" -ge 400 ]; then
+            exit 1
+          fi

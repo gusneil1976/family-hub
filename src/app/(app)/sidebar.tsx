@@ -7,6 +7,7 @@ import {
   BarChart3,
   CheckSquare,
   ClipboardCheck,
+  Film,
   History,
   Home,
   ListChecks,
@@ -260,6 +261,12 @@ export function Sidebar({
           active={inHouseTasks}
           icon={ListChecks}
           label="House Tasks"
+        />
+        <SidebarLink
+          href="/watch-list"
+          active={pathname.startsWith("/watch-list")}
+          icon={Film}
+          label="TV Shows/Movies"
         />
         {hasSpendTrackerAccess && (
           <SidebarLink

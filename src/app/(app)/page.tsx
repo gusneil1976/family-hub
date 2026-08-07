@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ListChecks, Plane, UtensilsCrossed, Wallet } from "lucide-react";
+import { Film, ListChecks, Plane, UtensilsCrossed, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 
@@ -17,6 +17,12 @@ const APPS = [
       "Create and complete chores, earn points, and check the scoreboard.",
     href: "/house-tasks",
     icon: ListChecks,
+  },
+  {
+    name: "TV Shows/Movies",
+    description: "Submit ideas for family watching time. Coming soon.",
+    href: "/watch-list",
+    icon: Film,
   },
 ];
 

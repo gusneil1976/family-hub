@@ -17,15 +17,19 @@ export function MealForm({
   ingredients,
   categories,
   submitLabel,
+  externalImageUrl,
 }: {
   action: (
     state: MealFormState,
     formData: FormData,
   ) => Promise<MealFormState>;
-  meal?: Meal;
-  ingredients?: Ingredient[];
+  meal?: Partial<Meal>;
+  ingredients?: Pick<Ingredient, "name" | "quantity" | "unit">[];
   categories: Category[];
   submitLabel: string;
+  // A not-yet-saved image URL (e.g. from a recipe-URL import) to adopt as
+  // the meal's photo unless the admin uploads their own file instead.
+  externalImageUrl?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [rows, setRows] = useState<IngredientRow[]>(
@@ -174,6 +178,23 @@ export function MealForm({
               <input type="checkbox" name="remove_image" className="h-4 w-4" />
               Remove current photo
             </label>
+          </div>
+        )}
+        {!meal?.image_url && externalImageUrl && (
+          <div className="mb-2 flex items-center gap-3">
+            <MealImage
+              src={externalImageUrl}
+              alt=""
+              className="h-20 w-20 rounded-md object-cover"
+            />
+            <p className="text-sm text-neutral-500">
+              Imported photo — upload a file below to use a different one
+            </p>
+            <input
+              type="hidden"
+              name="external_image_url"
+              value={externalImageUrl}
+            />
           </div>
         )}
         <input

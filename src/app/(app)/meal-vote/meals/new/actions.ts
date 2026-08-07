@@ -22,6 +22,8 @@ export async function createMeal(
   const categoryId = String(formData.get("category_id") ?? "") || null;
   const excludedFromVoting = formData.get("excluded_from_voting") === "on";
   const sourceUrl = String(formData.get("source_url") ?? "").trim() || null;
+  const externalImageUrl =
+    String(formData.get("external_image_url") ?? "").trim() || null;
 
   const { data: meal, error: mealError } = await supabase
     .from("meals")
@@ -34,6 +36,7 @@ export async function createMeal(
       category_id: categoryId,
       excluded_from_voting: excludedFromVoting,
       source_url: sourceUrl,
+      image_url: externalImageUrl,
     })
     .select("id")
     .single();

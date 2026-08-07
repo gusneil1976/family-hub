@@ -1,7 +1,6 @@
 import { requireAdmin } from "@/lib/auth";
 import type { Category } from "@/lib/types";
-import { MealForm } from "../meal-form";
-import { createMeal } from "./actions";
+import { NewMealClient } from "./new-meal-client";
 
 export default async function NewMealPage() {
   const { supabase } = await requireAdmin();
@@ -17,11 +16,7 @@ export default async function NewMealPage() {
       <h1 className="mb-4 text-2xl font-bold text-foreground">
         Add a meal
       </h1>
-      <MealForm
-        action={createMeal}
-        categories={categories ?? []}
-        submitLabel="Add meal"
-      />
+      <NewMealClient categories={categories ?? []} />
     </div>
   );
 }

@@ -46,6 +46,36 @@ const MEAL_VOTE_NAV: NavItem[] = [
   },
 ];
 
+const SPEND_TRACKER_NAV: NavItem[] = [
+  {
+    label: "Transactions",
+    href: "/spend-tracker",
+    icon: Wallet,
+    match: (p) =>
+      p === "/spend-tracker" ||
+      p.startsWith("/spend-tracker/new") ||
+      /^\/spend-tracker\/[^/]+\/edit$/.test(p),
+  },
+  {
+    label: "Report",
+    href: "/spend-tracker/report",
+    icon: BarChart3,
+    match: exact("/spend-tracker/report"),
+  },
+  {
+    label: "Categories",
+    href: "/spend-tracker/categories",
+    icon: ListChecks,
+    match: exact("/spend-tracker/categories"),
+  },
+  {
+    label: "Vendors",
+    href: "/spend-tracker/vendors",
+    icon: Users,
+    match: exact("/spend-tracker/vendors"),
+  },
+];
+
 const HOUSE_TASKS_NAV: NavItem[] = [
   {
     label: "Tasks",
@@ -100,16 +130,19 @@ export function Sidebar({
   email,
   isAdmin,
   isHouseTasksAdmin,
+  hasSpendTrackerAccess,
 }: {
   email: string | null;
   isAdmin: boolean;
   isHouseTasksAdmin: boolean;
+  hasSpendTrackerAccess: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [prevPathname, setPrevPathname] = useState(pathname);
   const inMealVote = pathname.startsWith("/meal-vote");
   const inHouseTasks = pathname.startsWith("/house-tasks");
+  const inSpendTracker = hasSpendTrackerAccess && pathname.startsWith("/spend-tracker");
 
   if (pathname !== prevPathname) {
     setPrevPathname(pathname);
@@ -144,7 +177,9 @@ export function Sidebar({
               ]
             : []),
         ]
-      : [];
+      : inSpendTracker
+        ? SPEND_TRACKER_NAV
+        : [];
 
   return (
     <>
@@ -208,17 +243,19 @@ export function Sidebar({
           icon={ListChecks}
           label="House Tasks"
         />
-        <SidebarLink
-          href="/spend-tracker"
-          active={pathname === "/spend-tracker"}
-          icon={Wallet}
-          label="Spend Tracker"
-        />
+        {hasSpendTrackerAccess && (
+          <SidebarLink
+            href="/spend-tracker"
+            active={inSpendTracker}
+            icon={Wallet}
+            label="Spend Tracker"
+          />
+        )}
 
         {contextNav.length > 0 && (
           <>
             <p className="mt-4 px-2 text-xs font-semibold uppercase tracking-wide text-sidebar-muted">
-              {inMealVote ? "Meal Vote" : "House Tasks"}
+              {inMealVote ? "Meal Vote" : inHouseTasks ? "House Tasks" : "Spend Tracker"}
             </p>
             {contextNav.map((item) => (
               <SidebarLink

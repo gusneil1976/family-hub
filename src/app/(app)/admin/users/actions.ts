@@ -136,6 +136,30 @@ export async function setHouseTasksAdmin(userId: string, isAdmin: boolean) {
   revalidatePath("/admin/users");
 }
 
+// Grants/revokes access to the Spend Tracker app (see
+// supabase/migrations/0012_spend_tracker.sql). Deliberately separate from
+// is_admin — this is meant to stay limited to whoever is explicitly given
+// it, not expand to every admin automatically.
+export async function setSpendTrackerAccess(userId: string, hasAccess: boolean) {
+  const { user } = await requireAdmin();
+
+  if (userId === user.id) {
+    throw new Error("You can't change your own access.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({ has_spend_tracker_access: hasAccess })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin/users");
+}
+
 // Permanently deletes the auth user (cascades to their profile row). Fails
 // with a foreign key error if they own meals, votes, or created cycles —
 // archive them instead in that case.

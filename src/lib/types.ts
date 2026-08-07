@@ -4,6 +4,7 @@ export type Profile = {
   is_admin: boolean;
   is_archived: boolean;
   is_house_tasks_admin: boolean;
+  has_spend_tracker_access: boolean;
   created_at: string;
 };
 
@@ -96,4 +97,26 @@ export type TaskCompletion = {
   completed_by: string;
   points: number;
   completed_at: string;
+};
+
+export type SpendCategory = {
+  id: string;
+  name: string;
+  created_at: string;
+};
+
+export type Vendor = {
+  id: string;
+  name: string;
+  created_at: string;
+};
+
+export type SpendTransaction = {
+  id: string;
+  date: string;
+  vendor_id: string;
+  category_id: string | null;
+  amount: number;
+  spent_by: string;
+  created_at: string;
 };

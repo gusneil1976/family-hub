@@ -46,3 +46,13 @@ export async function requireHouseTasksAdmin() {
   }
   return result;
 }
+
+// Deliberately not OR'd with is_admin — Spend Tracker is private to whoever
+// has this specific flag, not every admin now or in the future.
+export async function requireSpendTrackerAccess() {
+  const result = await requireUser();
+  if (!result.profile?.has_spend_tracker_access) {
+    redirect("/");
+  }
+  return result;
+}

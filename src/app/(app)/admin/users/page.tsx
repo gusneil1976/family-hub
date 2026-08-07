@@ -6,6 +6,7 @@ import { CreateUserForm } from "./create-user-form";
 import { HouseTasksAdminToggle } from "./house-tasks-admin-toggle";
 import { InviteForm } from "./invite-form";
 import { RemoveButton } from "./remove-button";
+import { SpendTrackerToggle } from "./spend-tracker-toggle";
 
 export default async function ManageUsersPage() {
   const { supabase, user: currentUser } = await requireAdmin();
@@ -70,6 +71,11 @@ export default async function ManageUsersPage() {
                   Tasks admin
                 </span>
               )}
+              {profile.has_spend_tracker_access && (
+                <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
+                  Spend tracker
+                </span>
+              )}
               {profile.id === currentUser.id && (
                 <span className="ml-2 text-neutral-400">(you)</span>
               )}
@@ -80,6 +86,10 @@ export default async function ManageUsersPage() {
                 <HouseTasksAdminToggle
                   userId={profile.id}
                   isAdmin={profile.is_house_tasks_admin}
+                />
+                <SpendTrackerToggle
+                  userId={profile.id}
+                  hasAccess={profile.has_spend_tracker_access}
                 />
                 <ArchiveToggle
                   userId={profile.id}

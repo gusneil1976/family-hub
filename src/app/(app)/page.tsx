@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ListChecks, UtensilsCrossed, Wallet } from "lucide-react";
-import { Badge, PageHeader } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 
 const APPS = [
   {
@@ -17,16 +18,23 @@ const APPS = [
     href: "/house-tasks",
     icon: ListChecks,
   },
-  {
-    name: "Spend Tracker",
-    description: "Track family spending. Coming soon.",
-    href: "/spend-tracker",
-    icon: Wallet,
-    comingSoon: true,
-  },
 ];
 
-export default function HubPage() {
+export default async function HubPage() {
+  const { profile } = await requireUser();
+
+  const apps = profile?.has_spend_tracker_access
+    ? [
+        ...APPS,
+        {
+          name: "Spend Tracker",
+          description: "Track current-account spending by category.",
+          href: "/spend-tracker",
+          icon: Wallet,
+        },
+      ]
+    : APPS;
+
   return (
     <div>
       <PageHeader
@@ -35,7 +43,7 @@ export default function HubPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        {APPS.map((app) => (
+        {apps.map((app) => (
           <Link
             key={app.href}
             href={app.href}
@@ -43,7 +51,6 @@ export default function HubPage() {
           >
             <div className="flex items-start justify-between">
               <app.icon className="h-6 w-6 text-accent" />
-              {app.comingSoon && <Badge>Coming soon</Badge>}
             </div>
             <h2 className="mt-3 font-semibold text-foreground">
               {app.name}

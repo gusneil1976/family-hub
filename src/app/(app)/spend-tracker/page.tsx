@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { Wallet } from "lucide-react";
 import { Card, PageHeader } from "@/components/ui";
+import { requireSpendTrackerAccess } from "@/lib/auth";
 
-export default function SpendTrackerPage() {
+export default async function SpendTrackerPage() {
+  await requireSpendTrackerAccess();
+
   return (
     <div>
       <p className="mb-4 text-sm">

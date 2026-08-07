@@ -13,6 +13,7 @@ import {
   ListTodo,
   LogOut,
   Menu,
+  Palette,
   ShieldCheck,
   Trophy,
   User,
@@ -232,6 +233,14 @@ export function Sidebar({
             active={pathname === "/admin/users"}
             icon={Users}
             label="Manage family"
+          />
+        )}
+        {isAdmin && (
+          <SidebarLink
+            href="/admin/settings"
+            active={pathname === "/admin/settings"}
+            icon={Palette}
+            label="Appearance"
           />
         )}
         <SidebarLink

@@ -19,6 +19,7 @@ import {
   User,
   UtensilsCrossed,
   Users,
+  Wallet,
   X,
 } from "lucide-react";
 import { signOut } from "./actions";
@@ -206,6 +207,12 @@ export function Sidebar({
           active={inHouseTasks}
           icon={ListChecks}
           label="House Tasks"
+        />
+        <SidebarLink
+          href="/spend-tracker"
+          active={pathname === "/spend-tracker"}
+          icon={Wallet}
+          label="Spend Tracker"
         />
 
         {contextNav.length > 0 && (

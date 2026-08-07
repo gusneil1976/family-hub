@@ -3,7 +3,12 @@ import { requireUser } from "@/lib/auth";
 import type { Task } from "@/lib/types";
 import { Badge, PageHeader, StatTile, StatTileRow } from "@/components/ui";
 import { CompleteButton } from "./complete-button";
-import { formatRecurrence, isOverdue, startOfWeek } from "./date-utils";
+import {
+  formatDueDateTime,
+  formatRecurrence,
+  isOverdue,
+  startOfWeek,
+} from "./date-utils";
 
 type TaskRow = Task & {
   assignee: { display_name: string | null } | null;
@@ -27,7 +32,8 @@ function TaskGroup({
           task.recurrence_unit,
           task.recurrence_value,
         );
-        const overdue = isOverdue(task.due_date);
+        const overdue = isOverdue(task.due_date, task.due_time);
+        const dueLabel = formatDueDateTime(task.due_date, task.due_time);
 
         return (
           <li
@@ -51,10 +57,10 @@ function TaskGroup({
                   <span>Assigned to {task.assignee.display_name}</span>
                 )}
                 {recurrence && <span> · {recurrence}</span>}
-                {task.due_date && (
+                {dueLabel && (
                   <span className={overdue ? "text-red-600" : ""}>
                     {" "}
-                    · Due {task.due_date}
+                    · Due {dueLabel}
                   </span>
                 )}
               </p>
@@ -97,7 +103,9 @@ export default async function HouseTasksPage() {
   const dueThisWeek = all.filter(
     (t) => t.due_date && new Date(t.due_date) < weekEnd,
   ).length;
-  const overdueCount = all.filter((t) => isOverdue(t.due_date)).length;
+  const overdueCount = all.filter((t) =>
+    isOverdue(t.due_date, t.due_time),
+  ).length;
 
   const canEdit = (task: TaskRow) =>
     task.created_by === user.id ||

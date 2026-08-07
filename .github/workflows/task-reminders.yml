@@ -1,0 +1,15 @@
+name: House Tasks reminders
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  check-overdue-tasks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call reminder endpoint
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/task-reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

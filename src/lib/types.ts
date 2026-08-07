@@ -81,10 +81,12 @@ export type Task = {
   created_by: string;
   assigned_to: string;
   due_date: string | null;
+  due_time: string | null;
   recurrence_unit: RecurrenceUnit | null;
   recurrence_value: number | null;
   is_active: boolean;
   completed_at: string | null;
+  reminder_sent_at: string | null;
   created_at: string;
 };
 

@@ -44,7 +44,35 @@ export function formatRecurrence(
   return `Every ${value} ${unit}`;
 }
 
-export function isOverdue(dueDate: string | null): boolean {
-  if (!dueDate) return false;
-  return new Date(dueDate + "T23:59:59") < new Date();
+export const DEFAULT_DUE_TIME = "20:00";
+
+// due_time comes back from Postgres as "HH:MM:SS"; trim to "HH:MM" for
+// consistent use in <input type="time"> and Date parsing.
+export function normalizeTime(time: string | null): string {
+  return (time ?? DEFAULT_DUE_TIME).slice(0, 5);
+}
+
+export function getDueDateTime(
+  dueDate: string | null,
+  dueTime: string | null,
+): Date | null {
+  if (!dueDate) return null;
+  return new Date(`${dueDate}T${normalizeTime(dueTime)}`);
+}
+
+export function isOverdue(
+  dueDate: string | null,
+  dueTime: string | null,
+): boolean {
+  const dt = getDueDateTime(dueDate, dueTime);
+  return dt !== null && dt < new Date();
+}
+
+export function formatDueDateTime(
+  dueDate: string | null,
+  dueTime: string | null,
+): string | null {
+  if (!dueDate) return null;
+  const time = dueTime ? normalizeTime(dueTime) : DEFAULT_DUE_TIME;
+  return `${dueDate} at ${time}`;
 }

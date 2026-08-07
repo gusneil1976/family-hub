@@ -9,7 +9,7 @@ export default async function AppLayout({
   const { user, profile } = await requireUser();
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen flex-col sm:flex-row">
       <Sidebar
         email={user.email ?? null}
         isAdmin={!!profile?.is_admin}

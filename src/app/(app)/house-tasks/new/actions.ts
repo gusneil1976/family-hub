@@ -25,6 +25,7 @@ export async function createTask(
   const assignedTo =
     String(formData.get("assigned_to") ?? "").trim() || user.id;
   const dueDate = String(formData.get("due_date") ?? "").trim() || null;
+  const dueTime = String(formData.get("due_time") ?? "").trim() || null;
   const description =
     String(formData.get("description") ?? "").trim() || null;
 
@@ -46,6 +47,7 @@ export async function createTask(
     created_by: user.id,
     assigned_to: assignedTo,
     due_date: dueDate,
+    due_time: dueTime,
     recurrence_unit: recurrenceUnit,
     recurrence_value: recurrenceValue,
   });

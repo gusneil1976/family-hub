@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import type { Profile, RecurrenceUnit, Task } from "@/lib/types";
+import { normalizeTime } from "./date-utils";
 
 export type TaskFormState = { error: string } | undefined;
 
@@ -145,6 +146,24 @@ export function TaskForm({
             defaultValue={task?.due_date ?? ""}
             className="rounded-md border border-neutral-300 px-3 py-2 text-base focus:border-accent focus:outline-none"
           />
+        </div>
+
+        <div>
+          <label
+            htmlFor="due_time"
+            className="mb-1 block text-sm font-medium text-neutral-700"
+          >
+            Due time (optional)
+          </label>
+          <input
+            id="due_time"
+            name="due_time"
+            type="time"
+            defaultValue={task?.due_time ? normalizeTime(task.due_time) : ""}
+            placeholder="8:00 PM"
+            className="rounded-md border border-neutral-300 px-3 py-2 text-base focus:border-accent focus:outline-none"
+          />
+          <p className="mt-1 text-xs text-neutral-500">Defaults to 8:00 PM</p>
         </div>
       </div>
 

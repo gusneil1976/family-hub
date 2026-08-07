@@ -30,8 +30,13 @@ export async function completeTask(taskId: string) {
   }
 
   const isRecurring = !!task.recurrence_unit && !!task.recurrence_value;
-  const update: { completed_at: string | null; due_date?: string | null } = {
+  const update: {
+    completed_at: string | null;
+    due_date?: string | null;
+    reminder_sent_at: null;
+  } = {
     completed_at: isRecurring ? null : new Date().toISOString(),
+    reminder_sent_at: null,
   };
 
   if (isRecurring && task.due_date) {

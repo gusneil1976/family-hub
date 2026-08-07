@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   BarChart3,
   CheckSquare,
@@ -11,11 +12,13 @@ import {
   ListChecks,
   ListTodo,
   LogOut,
+  Menu,
   ShieldCheck,
   Trophy,
   User,
   UtensilsCrossed,
   Users,
+  X,
 } from "lucide-react";
 import { signOut } from "./actions";
 
@@ -101,8 +104,15 @@ export function Sidebar({
   isHouseTasksAdmin: boolean;
 }) {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
   const inMealVote = pathname.startsWith("/meal-vote");
   const inHouseTasks = pathname.startsWith("/house-tasks");
+
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setOpen(false);
+  }
 
   const contextNav: NavItem[] = inMealVote
     ? [
@@ -135,16 +145,52 @@ export function Sidebar({
       : [];
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground print:hidden">
-      <Link
-        href="/"
-        className="flex items-center gap-2 px-4 py-4 font-semibold text-white"
-      >
-        <Home className="h-5 w-5 text-accent" />
-        Family Hub
-      </Link>
+    <>
+      <div className="flex items-center justify-between bg-sidebar px-4 py-3 text-white sm:hidden print:hidden">
+        <Link href="/" className="flex items-center gap-2 font-semibold">
+          <Home className="h-5 w-5 text-accent" />
+          Family Hub
+        </Link>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Open menu"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+      </div>
 
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2">
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-200 sm:static sm:z-auto sm:w-56 sm:translate-x-0 print:hidden ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between px-4 py-4">
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-semibold text-white"
+          >
+            <Home className="h-5 w-5 text-accent" />
+            Family Hub
+          </Link>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close menu"
+            className="sm:hidden"
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+        </div>
+
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2">
         <p className="mt-2 px-2 text-xs font-semibold uppercase tracking-wide text-sidebar-muted">
           Apps
         </p>
@@ -209,6 +255,7 @@ export function Sidebar({
           </button>
         </form>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

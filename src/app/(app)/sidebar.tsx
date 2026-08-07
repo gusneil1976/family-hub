@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Target,
   Trophy,
+  Upload,
   User,
   UtensilsCrossed,
   Users,
@@ -56,6 +57,12 @@ const SPEND_TRACKER_NAV: NavItem[] = [
       p === "/spend-tracker" ||
       p.startsWith("/spend-tracker/new") ||
       /^\/spend-tracker\/[^/]+\/edit$/.test(p),
+  },
+  {
+    label: "Import",
+    href: "/spend-tracker/import",
+    icon: Upload,
+    match: exact("/spend-tracker/import"),
   },
   {
     label: "Report",

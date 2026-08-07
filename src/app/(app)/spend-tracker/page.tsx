@@ -75,9 +75,17 @@ export default async function SpendTrackerPage() {
                   {t.spent_by === user.id && <span> (you)</span>}
                 </p>
               </div>
-              <span className="font-semibold text-foreground">
-                {formatGBP(t.amount)}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="font-semibold text-foreground">
+                  {formatGBP(t.amount)}
+                </span>
+                <Link
+                  href={`/spend-tracker/${t.id}/edit`}
+                  className="text-sm text-neutral-500 underline hover:text-neutral-900"
+                >
+                  Edit
+                </Link>
+              </div>
             </li>
           ))}
         </ul>

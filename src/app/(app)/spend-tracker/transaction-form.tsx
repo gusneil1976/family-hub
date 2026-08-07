@@ -9,6 +9,7 @@ export function TransactionForm({
   action,
   categories,
   vendorNames,
+  spentByOptions,
   defaultValues,
   submitLabel,
 }: {
@@ -18,11 +19,13 @@ export function TransactionForm({
   ) => Promise<TransactionFormState>;
   categories: SpendCategory[];
   vendorNames: string[];
+  spentByOptions?: { id: string; display_name: string | null }[];
   defaultValues?: {
     date?: string;
     vendor?: string;
     amount?: number;
     category_id?: string | null;
+    spent_by?: string;
   };
   submitLabel: string;
 }) {
@@ -119,6 +122,29 @@ export function TransactionForm({
           </p>
         )}
       </div>
+
+      {spentByOptions && (
+        <div>
+          <label
+            htmlFor="spent_by"
+            className="mb-1 block text-sm font-medium text-neutral-700"
+          >
+            Spent by
+          </label>
+          <select
+            id="spent_by"
+            name="spent_by"
+            defaultValue={defaultValues?.spent_by}
+            className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-base focus:border-accent focus:outline-none"
+          >
+            {spentByOptions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.display_name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
 

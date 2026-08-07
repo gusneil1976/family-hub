@@ -18,7 +18,7 @@ export function ApproveForm({
       <input
         type="number"
         name="points"
-        min={1}
+        min={0}
         defaultValue={currentPoints}
         className="w-20 rounded-md border border-neutral-300 px-2 py-1.5 text-sm focus:border-accent focus:outline-none"
       />

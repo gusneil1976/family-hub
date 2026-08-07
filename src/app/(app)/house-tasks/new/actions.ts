@@ -18,8 +18,8 @@ export async function createTask(
   }
 
   const points = Number(formData.get("points") ?? 1);
-  if (!Number.isFinite(points) || points < 1) {
-    return { error: "Points must be a positive number." };
+  if (!Number.isFinite(points) || points < 0) {
+    return { error: "Points can't be negative." };
   }
 
   const assignedTo =

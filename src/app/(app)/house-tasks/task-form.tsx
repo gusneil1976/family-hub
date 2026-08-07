@@ -126,7 +126,7 @@ export function TaskForm({
             id="points"
             name="points"
             type="number"
-            min={1}
+            min={0}
             defaultValue={task?.points ?? 1}
             className="w-24 rounded-md border border-neutral-300 px-3 py-2 text-base focus:border-accent focus:outline-none"
           />

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Film, ListChecks, Plane, UtensilsCrossed, Wallet } from "lucide-react";
+import { Film, ListChecks, Plane, Sparkles, UtensilsCrossed, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 
@@ -49,6 +49,15 @@ export default async function HubPage() {
 
   return (
     <div>
+      <p className="mb-2 flex items-center gap-2 text-3xl font-extrabold sm:text-4xl">
+        <Sparkles className="sparkle-icon h-7 w-7 shrink-0 text-amber-400" />
+        <span className="sparkle-text">Happy 50th Birthday Anna</span>
+        <Sparkles
+          className="sparkle-icon h-7 w-7 shrink-0 text-amber-400"
+          style={{ animationDelay: "0.5s" }}
+        />
+      </p>
+
       <PageHeader
         title="Welcome to the Neil Family Hub"
         description="Choose an app."

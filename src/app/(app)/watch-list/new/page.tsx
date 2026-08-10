@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
+import { WatchItemForm } from "../watch-item-form";
 import { createWatchListItem } from "./actions";
-import { WatchItemForm } from "./watch-item-form";
 
 export default async function NewWatchListItemPage() {
   const { supabase } = await requireUser();
@@ -22,6 +22,7 @@ export default async function NewWatchListItemPage() {
       <WatchItemForm
         action={createWatchListItem}
         platformOptions={platformOptions}
+        submitLabel="Add to list"
       />
     </div>
   );

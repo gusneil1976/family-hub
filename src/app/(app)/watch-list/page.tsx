@@ -16,9 +16,11 @@ const CATEGORY_LABELS: Record<ItemRow["category"], string> = {
 function ItemList({
   items,
   showCategoryBadge = false,
+  canManage,
 }: {
   items: ItemRow[];
   showCategoryBadge?: boolean;
+  canManage: (item: ItemRow) => boolean;
 }) {
   if (!items.length) {
     return <p className="text-sm text-neutral-500">Nothing here yet.</p>;
@@ -48,11 +50,21 @@ function ItemList({
               )}
             </p>
           </div>
-          <WatchToggles
-            itemId={item.id}
-            isWatching={item.is_watching}
-            watched={item.watched}
-          />
+          <div className="flex shrink-0 items-center gap-3">
+            {canManage(item) && (
+              <Link
+                href={`/watch-list/${item.id}/edit`}
+                className="text-sm text-neutral-500 underline hover:text-neutral-900"
+              >
+                Edit
+              </Link>
+            )}
+            <WatchToggles
+              itemId={item.id}
+              isWatching={item.is_watching}
+              watched={item.watched}
+            />
+          </div>
         </li>
       ))}
     </ul>
@@ -60,7 +72,7 @@ function ItemList({
 }
 
 export default async function WatchListPage() {
-  const { supabase } = await requireUser();
+  const { supabase, user, profile } = await requireUser();
 
   const { data: items } = await supabase
     .from("watch_list_items")
@@ -71,6 +83,8 @@ export default async function WatchListPage() {
     .returns<ItemRow[]>();
 
   const all = items ?? [];
+  const canManage = (item: ItemRow) =>
+    item.submitted_by === user.id || !!profile?.is_admin;
   const active = all.filter((i) => !i.watched);
   const archive = all
     .filter((i) => i.watched)
@@ -101,7 +115,10 @@ export default async function WatchListPage() {
             <h2 className="mb-2 text-sm font-semibold text-neutral-700">
               Films
             </h2>
-            <ItemList items={active.filter((i) => i.category === "film")} />
+            <ItemList
+              items={active.filter((i) => i.category === "film")}
+              canManage={canManage}
+            />
           </section>
 
           <section className="mb-6">
@@ -110,6 +127,7 @@ export default async function WatchListPage() {
             </h2>
             <ItemList
               items={active.filter((i) => i.category === "tv_show")}
+              canManage={canManage}
             />
           </section>
 
@@ -118,7 +136,11 @@ export default async function WatchListPage() {
               <h2 className="mb-2 text-sm font-semibold text-neutral-700">
                 Watched
               </h2>
-              <ItemList items={archive} showCategoryBadge />
+              <ItemList
+                items={archive}
+                showCategoryBadge
+                canManage={canManage}
+              />
             </section>
           )}
         </>

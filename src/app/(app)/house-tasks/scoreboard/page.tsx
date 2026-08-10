@@ -23,6 +23,7 @@ export default async function ScoreboardPage() {
     .from("profiles")
     .select("*")
     .eq("is_archived", false)
+    .eq("is_kiosk", false)
     .order("display_name")
     .returns<Profile[]>();
 

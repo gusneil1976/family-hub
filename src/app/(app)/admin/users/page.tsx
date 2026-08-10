@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import type { Profile } from "@/lib/types";
 import { AdminToggle } from "./admin-toggle";
 import { ArchiveToggle } from "./archive-toggle";
+import { BakingToggle } from "./baking-toggle";
 import { CreateUserForm } from "./create-user-form";
 import { HouseTasksAdminToggle } from "./house-tasks-admin-toggle";
 import { InviteForm } from "./invite-form";
@@ -82,6 +83,11 @@ export default async function ManageUsersPage() {
                   Mini breaks
                 </span>
               )}
+              {profile.has_baking_access && (
+                <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
+                  Curing projects
+                </span>
+              )}
               {profile.id === currentUser.id && (
                 <span className="ml-2 text-neutral-400">(you)</span>
               )}
@@ -100,6 +106,10 @@ export default async function ManageUsersPage() {
                 <MiniBreaksToggle
                   userId={profile.id}
                   hasAccess={profile.has_mini_breaks_access}
+                />
+                <BakingToggle
+                  userId={profile.id}
+                  hasAccess={profile.has_baking_access}
                 />
                 <ArchiveToggle
                   userId={profile.id}

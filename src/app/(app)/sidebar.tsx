@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   BarChart3,
   CheckSquare,
+  ChefHat,
   ClipboardCheck,
   Film,
   History,
@@ -113,6 +114,25 @@ const MINI_BREAKS_NAV: NavItem[] = [
   },
 ];
 
+const CURING_NAV: NavItem[] = [
+  {
+    label: "Projects",
+    href: "/curing",
+    icon: ChefHat,
+    match: (p) =>
+      p === "/curing" ||
+      p.startsWith("/curing/new") ||
+      /^\/curing\/[^/]+$/.test(p) ||
+      /^\/curing\/[^/]+\/edit$/.test(p),
+  },
+  {
+    label: "Templates",
+    href: "/curing/templates",
+    icon: ListChecks,
+    match: (p) => p.startsWith("/curing/templates"),
+  },
+];
+
 const HOUSE_TASKS_NAV: NavItem[] = [
   {
     label: "Tasks",
@@ -169,12 +189,14 @@ export function Sidebar({
   isHouseTasksAdmin,
   hasSpendTrackerAccess,
   hasMiniBreaksAccess,
+  hasBakingAccess,
 }: {
   email: string | null;
   isAdmin: boolean;
   isHouseTasksAdmin: boolean;
   hasSpendTrackerAccess: boolean;
   hasMiniBreaksAccess: boolean;
+  hasBakingAccess: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -183,6 +205,7 @@ export function Sidebar({
   const inHouseTasks = pathname.startsWith("/house-tasks");
   const inSpendTracker = hasSpendTrackerAccess && pathname.startsWith("/spend-tracker");
   const inMiniBreaks = hasMiniBreaksAccess && pathname.startsWith("/mini-breaks");
+  const inBaking = hasBakingAccess && pathname.startsWith("/curing");
 
   if (pathname !== prevPathname) {
     setPrevPathname(pathname);
@@ -221,7 +244,9 @@ export function Sidebar({
         ? SPEND_TRACKER_NAV
         : inMiniBreaks
           ? MINI_BREAKS_NAV
-          : [];
+          : inBaking
+            ? CURING_NAV
+            : [];
 
   return (
     <>
@@ -313,6 +338,14 @@ export function Sidebar({
             label="Mini Breaks"
           />
         )}
+        {hasBakingAccess && (
+          <SidebarLink
+            href="/curing"
+            active={inBaking}
+            icon={ChefHat}
+            label="Curing Projects"
+          />
+        )}
 
         {contextNav.length > 0 && (
           <>
@@ -323,7 +356,9 @@ export function Sidebar({
                   ? "House Tasks"
                   : inSpendTracker
                     ? "Spend Tracker"
-                    : "Mini Breaks"}
+                    : inMiniBreaks
+                      ? "Mini Breaks"
+                      : "Curing Projects"}
             </p>
             {contextNav.map((item) => (
               <SidebarLink

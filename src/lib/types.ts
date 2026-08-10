@@ -6,6 +6,7 @@ export type Profile = {
   is_house_tasks_admin: boolean;
   has_spend_tracker_access: boolean;
   has_mini_breaks_access: boolean;
+  has_baking_access: boolean;
   created_at: string;
 };
 
@@ -186,5 +187,42 @@ export type DiyTask = {
   percent_complete: number;
   completed_at: string | null;
   created_by: string;
+  created_at: string;
+};
+
+export type BakingTemplate = {
+  id: string;
+  name: string;
+  created_by: string;
+  created_at: string;
+};
+
+export type BakingTemplateStep = {
+  id: string;
+  template_id: string;
+  offset_days: number;
+  label: string;
+  sort_order: number;
+};
+
+export type BakingProject = {
+  id: string;
+  name: string;
+  template_id: string | null;
+  start_date: string;
+  initial_weight: number | null;
+  target_weight: number | null;
+  created_by: string;
+  created_at: string;
+};
+
+export type BakingProjectStep = {
+  id: string;
+  project_id: string;
+  label: string;
+  due_date: string;
+  completed_at: string | null;
+  weight: number | null;
+  sort_order: number;
   created_at: string;
 };

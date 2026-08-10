@@ -183,6 +183,29 @@ export async function setMiniBreaksAccess(userId: string, hasAccess: boolean) {
   revalidatePath("/admin/users");
 }
 
+// Grants/revokes access to the Curing Projects app (see
+// supabase/migrations/0021_curing_projects.sql). Deliberately separate from
+// is_admin — same reasoning as setSpendTrackerAccess/setMiniBreaksAccess.
+export async function setBakingAccess(userId: string, hasAccess: boolean) {
+  const { user } = await requireAdmin();
+
+  if (userId === user.id) {
+    throw new Error("You can't change your own access.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({ has_baking_access: hasAccess })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin/users");
+}
+
 // Permanently deletes the auth user (cascades to their profile row). Fails
 // with a foreign key error if they own meals, votes, or created cycles —
 // archive them instead in that case.

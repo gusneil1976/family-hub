@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  ChefHat,
   Film,
   ListChecks,
   Plane,
@@ -58,6 +59,14 @@ export default async function HubPage() {
       description: "Plan trip ideas — dates, links, and travel documents.",
       href: "/mini-breaks",
       icon: Plane,
+    });
+  }
+  if (profile?.has_baking_access) {
+    apps.push({
+      name: "Curing Projects",
+      description: "Track multi-step baking and curing projects over time.",
+      href: "/curing",
+      icon: ChefHat,
     });
   }
 

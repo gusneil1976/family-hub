@@ -66,3 +66,13 @@ export async function requireMiniBreaksAccess() {
   }
   return result;
 }
+
+// Same privacy model again — currently only ever granted to one person, but
+// kept as a toggle-able flag for consistency with the rest of the app.
+export async function requireBakingAccess() {
+  const result = await requireUser();
+  if (!result.profile?.has_baking_access) {
+    redirect("/");
+  }
+  return result;
+}

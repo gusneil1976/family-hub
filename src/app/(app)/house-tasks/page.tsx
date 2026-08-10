@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { Task } from "@/lib/types";
 import { PageHeader, StatTile, StatTileRow } from "@/components/ui";
+import { getUpcomingBakingSteps } from "../curing/get-due-steps";
 import { TaskBoard } from "./task-board";
 import { isOverdue, startOfWeek } from "./date-utils";
 
@@ -21,6 +22,23 @@ export default async function HouseTasksPage() {
     .returns<TaskRow[]>();
 
   const all = tasks ?? [];
+
+  // Generously wide window, not week-precise — the calendar buckets by
+  // local date client-side anyway (same reasoning as tasks, which aren't
+  // date-filtered server-side at all). Only fetched for whoever has Curing
+  // Projects access; everyone else's Calendar view is unaffected.
+  let bakingSteps: Awaited<ReturnType<typeof getUpcomingBakingSteps>> = [];
+  if (profile?.has_baking_access) {
+    const rangeStart = new Date();
+    rangeStart.setDate(rangeStart.getDate() - 14);
+    const rangeEnd = new Date();
+    rangeEnd.setDate(rangeEnd.getDate() + 90);
+    bakingSteps = await getUpcomingBakingSteps(
+      supabase,
+      rangeStart.toISOString().slice(0, 10),
+      rangeEnd.toISOString().slice(0, 10),
+    );
+  }
   const myTasks = all.filter((t) => t.assigned_to === user.id);
   const otherTasks = all.filter((t) => t.assigned_to !== user.id);
 
@@ -65,6 +83,7 @@ export default async function HouseTasksPage() {
         myTasks={myTasks}
         otherTasks={otherTasks}
         editableTaskIds={editableTaskIds}
+        bakingSteps={bakingSteps}
       />
     </div>
   );

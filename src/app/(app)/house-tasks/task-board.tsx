@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Task } from "@/lib/types";
 import { Badge } from "@/components/ui";
+import type { DueBakingStep } from "../curing/get-due-steps";
+import { BakingWeeklyCalendar } from "./baking-weekly-calendar";
 import { CompleteButton } from "./complete-button";
 import {
   formatDueDateTime,
@@ -222,10 +224,12 @@ export function TaskBoard({
   myTasks,
   otherTasks,
   editableTaskIds,
+  bakingSteps,
 }: {
   myTasks: TaskRow[];
   otherTasks: TaskRow[];
   editableTaskIds: string[];
+  bakingSteps?: DueBakingStep[];
 }) {
   const [view, setView] = useState<"list" | "calendar">("calendar");
   const editableSet = useMemo(
@@ -296,6 +300,13 @@ export function TaskBoard({
             days={days}
             todayKey={todayKey}
           />
+          {bakingSteps && bakingSteps.length > 0 && (
+            <BakingWeeklyCalendar
+              steps={bakingSteps}
+              days={days}
+              todayKey={todayKey}
+            />
+          )}
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Task } from "@/lib/types";
 import { Badge } from "@/components/ui";
@@ -232,13 +233,18 @@ export function TaskBoard({
   bakingSteps?: DueBakingStep[];
 }) {
   const [view, setView] = useState<"list" | "calendar">("calendar");
+  const [weekOffset, setWeekOffset] = useState(0);
   const editableSet = useMemo(
     () => new Set(editableTaskIds),
     [editableTaskIds],
   );
 
-  const weekStart = useMemo(() => startOfWeek(new Date()), []);
   const todayKey = useMemo(() => dateKey(new Date()), []);
+  const weekStart = useMemo(() => {
+    const d = startOfWeek(new Date());
+    d.setDate(d.getDate() + weekOffset * 7);
+    return d;
+  }, [weekOffset]);
   const days = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) => {
@@ -248,6 +254,13 @@ export function TaskBoard({
       }),
     [weekStart],
   );
+  const weekRangeLabel = useMemo(() => {
+    const end = days[days.length - 1];
+    const start = days[0];
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    return `${fmt(start)} – ${fmt(end)}`;
+  }, [days]);
 
   return (
     <div>
@@ -286,6 +299,36 @@ export function TaskBoard({
         </>
       ) : (
         <div className="space-y-8">
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setWeekOffset((o) => o - 1)}
+              aria-label="Previous week"
+              className="rounded-md border border-neutral-300 p-1.5 text-neutral-700 hover:bg-neutral-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="min-w-[9rem] text-center text-sm font-medium text-neutral-700">
+              {weekRangeLabel}
+              {weekOffset !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => setWeekOffset(0)}
+                  className="ml-2 text-xs font-normal text-accent underline"
+                >
+                  Today
+                </button>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={() => setWeekOffset((o) => o + 1)}
+              aria-label="Next week"
+              className="rounded-md border border-neutral-300 p-1.5 text-neutral-700 hover:bg-neutral-50"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
           <WeeklyCalendar
             label="My tasks"
             tasks={myTasks}

@@ -1,10 +1,15 @@
+import Link from "next/link";
+import { UtensilsCrossed } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import type { Ingredient, Meal, VotingCycle } from "@/lib/types";
-import { Card, PageHeader } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { MealImage } from "../meals/meal-image";
 import { ShoppingChecklist, type ChecklistIngredient } from "./checklist";
 
 type ShortlistRow = { meal_id: string; meals: Meal };
+
+const RANK_LABELS = ["1st", "2nd", "3rd"];
+const RANK_STYLES = ["bg-accent", "bg-neutral-500", "bg-amber-700"];
 
 export default async function ResultsPage() {
   const { supabase, profile } = await requireUser();
@@ -46,6 +51,8 @@ export default async function ResultsPage() {
     voteCounts.set(v.meal_id, (voteCounts.get(v.meal_id) ?? 0) + 1);
   });
 
+  const totalVotes = votes?.length ?? 0;
+
   const ranked = (shortlist ?? [])
     .slice()
     .sort(
@@ -53,11 +60,10 @@ export default async function ResultsPage() {
         (voteCounts.get(b.meal_id) ?? 0) - (voteCounts.get(a.meal_id) ?? 0),
     );
 
-  const winnerEntry = ranked[0];
+  // A "winner" only exists once at least one vote has actually been cast —
+  // otherwise ranked[0] is just the first shortlist entry, not a leader.
+  const winnerEntry = totalVotes > 0 ? ranked[0] : undefined;
   const winner = winnerEntry?.meals;
-  const winnerVotes = winnerEntry
-    ? (voteCounts.get(winnerEntry.meal_id) ?? 0)
-    : 0;
 
   const { data: ingredients } = winner
     ? await supabase
@@ -103,65 +109,61 @@ export default async function ResultsPage() {
     <div>
       <PageHeader
         title={
-          cycle.status === "live" ? "Leading so far" : "This week's winner"
+          totalVotes === 0
+            ? "This week's shortlist"
+            : cycle.status === "live"
+              ? "Leading so far"
+              : "This week's winner"
         }
+        description={totalVotes === 0 ? "No votes cast yet." : undefined}
       />
 
-      {!winner ? (
-        <p className="text-sm text-neutral-500">No votes yet.</p>
+      {ranked.length === 0 ? (
+        <p className="text-sm text-neutral-500">
+          No shortlist for this cycle.
+        </p>
       ) : (
         <>
-          {winner.image_url && (
-            <MealImage
-              src={winner.image_url}
-              alt={winner.name}
-              className="mb-3 h-56 w-full rounded-xl object-cover"
-            />
-          )}
-
-          <div className="mb-4">
-            <p className="text-sm text-neutral-500">
-              {winner.name} — {winnerVotes} vote{winnerVotes === 1 ? "" : "s"}
-            </p>
-            {winner.source_url && (
-              <p className="mt-1 text-sm">
-                <a
-                  href={winner.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-neutral-600 underline hover:text-neutral-900"
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {ranked.map((entry, i) => {
+              const meal = entry.meals;
+              const count = voteCounts.get(entry.meal_id) ?? 0;
+              return (
+                <Link
+                  key={entry.meal_id}
+                  href={`/meal-vote/meals/${meal.id}`}
+                  className="relative block overflow-hidden rounded-xl border border-card-border bg-card shadow-sm transition-colors hover:border-accent"
                 >
-                  View original recipe ↗
-                </a>
-              </p>
-            )}
+                  {meal.image_url ? (
+                    <MealImage
+                      src={meal.image_url}
+                      alt=""
+                      className="h-44 w-full object-cover sm:h-48"
+                    />
+                  ) : (
+                    <div className="flex h-44 w-full items-center justify-center bg-neutral-100 sm:h-48">
+                      <UtensilsCrossed className="h-10 w-10 text-neutral-300" />
+                    </div>
+                  )}
+                  {totalVotes > 0 && i < 3 && (
+                    <span
+                      className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold text-white shadow ${RANK_STYLES[i]}`}
+                    >
+                      {RANK_LABELS[i]}
+                    </span>
+                  )}
+                  <div className="px-4 py-3">
+                    <p className="text-base font-medium text-neutral-900">
+                      {meal.name}
+                    </p>
+                    <p className="mt-0.5 text-sm text-neutral-500">
+                      {count} vote{count === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
-
-          <Card className="mb-6">
-            <h2 className="mb-2 text-sm font-semibold text-neutral-700">
-              Ingredients
-            </h2>
-            <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-800">
-              {ingredients?.map((ing) => (
-                <li key={ing.id}>
-                  {[ing.quantity, ing.unit, ing.name]
-                    .filter(Boolean)
-                    .join(" ")}
-                </li>
-              ))}
-            </ul>
-          </Card>
-
-          {winner.recipe_body && (
-            <Card className="mb-6">
-              <h2 className="mb-2 text-sm font-semibold text-neutral-700">
-                Recipe
-              </h2>
-              <p className="whitespace-pre-wrap text-sm text-neutral-800">
-                {winner.recipe_body}
-              </p>
-            </Card>
-          )}
 
           {profile?.is_admin && checklistItems.length > 0 && (
             <ShoppingChecklist items={checklistItems} />

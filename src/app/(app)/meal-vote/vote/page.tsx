@@ -37,9 +37,10 @@ export default async function VotePage() {
 
   const { data: myVotes } = await supabase
     .from("votes")
-    .select("meal_id")
+    .select("meal_id, rank")
     .eq("voting_cycle_id", cycle.id)
-    .eq("voter_id", user.id);
+    .eq("voter_id", user.id)
+    .order("rank", { ascending: true });
 
   const meals = (shortlist ?? []).map((s) => s.meals);
   const initialSelected = (myVotes ?? []).map((v) => v.meal_id);
@@ -48,7 +49,7 @@ export default async function VotePage() {
     <div>
       <PageHeader
         title="Vote for this week's meal"
-        description="Pick up to 3 meals. You can change your mind until voting closes."
+        description="Pick up to 3 meals and rank them. You can change your mind until voting closes."
       />
       <VoteForm
         meals={meals}

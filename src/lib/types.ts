@@ -62,6 +62,7 @@ export type Vote = {
   voting_cycle_id: string;
   voter_id: string;
   meal_id: string;
+  rank: number;
   created_at: string;
 };
 

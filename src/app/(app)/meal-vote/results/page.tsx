@@ -43,22 +43,22 @@ export default async function ResultsPage() {
 
   const { data: votes } = await supabase
     .from("votes")
-    .select("meal_id")
+    .select("meal_id, rank")
     .eq("voting_cycle_id", cycle.id);
 
-  const voteCounts = new Map<string, number>();
+  // 1st choice = 3 points, 2nd = 2, 3rd = 1.
+  const POINTS_BY_RANK: Record<number, number> = { 1: 3, 2: 2, 3: 1 };
+  const points = new Map<string, number>();
   votes?.forEach((v) => {
-    voteCounts.set(v.meal_id, (voteCounts.get(v.meal_id) ?? 0) + 1);
+    const weight = POINTS_BY_RANK[v.rank] ?? 0;
+    points.set(v.meal_id, (points.get(v.meal_id) ?? 0) + weight);
   });
 
   const totalVotes = votes?.length ?? 0;
 
   const ranked = (shortlist ?? [])
     .slice()
-    .sort(
-      (a, b) =>
-        (voteCounts.get(b.meal_id) ?? 0) - (voteCounts.get(a.meal_id) ?? 0),
-    );
+    .sort((a, b) => (points.get(b.meal_id) ?? 0) - (points.get(a.meal_id) ?? 0));
 
   // A "winner" only exists once at least one vote has actually been cast —
   // otherwise ranked[0] is just the first shortlist entry, not a leader.
@@ -127,7 +127,7 @@ export default async function ResultsPage() {
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {ranked.map((entry, i) => {
               const meal = entry.meals;
-              const count = voteCounts.get(entry.meal_id) ?? 0;
+              const pointTotal = points.get(entry.meal_id) ?? 0;
               return (
                 <Link
                   key={entry.meal_id}
@@ -157,7 +157,7 @@ export default async function ResultsPage() {
                       {meal.name}
                     </p>
                     <p className="mt-0.5 text-sm text-neutral-500">
-                      {count} vote{count === 1 ? "" : "s"}
+                      {pointTotal} point{pointTotal === 1 ? "" : "s"}
                     </p>
                   </div>
                 </Link>

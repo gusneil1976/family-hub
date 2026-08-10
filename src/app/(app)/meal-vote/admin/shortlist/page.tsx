@@ -35,13 +35,16 @@ export default async function AdminShortlistPage() {
   const { data: votes } = cycle?.status === "live"
     ? await supabase
         .from("votes")
-        .select("meal_id")
+        .select("meal_id, rank")
         .eq("voting_cycle_id", cycle.id)
     : { data: null };
 
-  const voteCounts = new Map<string, number>();
+  // 1st choice = 3 points, 2nd = 2, 3rd = 1.
+  const POINTS_BY_RANK: Record<number, number> = { 1: 3, 2: 2, 3: 1 };
+  const points = new Map<string, number>();
   votes?.forEach((v) => {
-    voteCounts.set(v.meal_id, (voteCounts.get(v.meal_id) ?? 0) + 1);
+    const weight = POINTS_BY_RANK[v.rank] ?? 0;
+    points.set(v.meal_id, (points.get(v.meal_id) ?? 0) + weight);
   });
 
   return (
@@ -123,8 +126,7 @@ export default async function AdminShortlistPage() {
               ?.slice()
               .sort(
                 (a, b) =>
-                  (voteCounts.get(b.meal_id) ?? 0) -
-                  (voteCounts.get(a.meal_id) ?? 0),
+                  (points.get(b.meal_id) ?? 0) - (points.get(a.meal_id) ?? 0),
               )
               .map((entry) => (
                 <li
@@ -133,7 +135,7 @@ export default async function AdminShortlistPage() {
                 >
                   <span>{entry.meals.name}</span>
                   <span className="text-neutral-500">
-                    {voteCounts.get(entry.meal_id) ?? 0} votes
+                    {points.get(entry.meal_id) ?? 0} points
                   </span>
                 </li>
               ))}

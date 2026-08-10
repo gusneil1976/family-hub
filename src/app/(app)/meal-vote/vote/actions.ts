@@ -30,10 +30,11 @@ export async function submitVotes(
   }
 
   const { error: insertError } = await supabase.from("votes").insert(
-    mealIds.map((meal_id) => ({
+    mealIds.map((meal_id, i) => ({
       voting_cycle_id: cycleId,
       voter_id: user.id,
       meal_id,
+      rank: i + 1,
     })),
   );
   if (insertError) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Check, UtensilsCrossed } from "lucide-react";
 import type { Meal } from "@/lib/types";
 import { MealImage } from "../meals/meal-image";
 
@@ -30,41 +31,51 @@ export function VoteForm({
 
   return (
     <form action={formAction}>
-      <ul className="mb-4 divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
+      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {meals.map((meal) => {
           const checked = selected.includes(meal.id);
           const disabled = !checked && selected.length >= 3;
           return (
-            <li key={meal.id}>
-              <label
-                className={`flex min-h-12 flex-1 items-center gap-3 px-4 py-3 text-base ${
-                  disabled ? "text-neutral-400" : "text-neutral-900"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  name="meal_id"
-                  value={meal.id}
-                  checked={checked}
-                  disabled={disabled}
-                  onChange={() => toggle(meal.id)}
-                  className="h-5 w-5 shrink-0 accent-[var(--accent)]"
+            <label
+              key={meal.id}
+              className={`relative block overflow-hidden rounded-xl border bg-card shadow-sm transition-colors ${
+                checked
+                  ? "border-accent ring-2 ring-accent"
+                  : "border-card-border hover:border-accent"
+              } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+            >
+              <input
+                type="checkbox"
+                name="meal_id"
+                value={meal.id}
+                checked={checked}
+                disabled={disabled}
+                onChange={() => toggle(meal.id)}
+                className="sr-only"
+              />
+              {meal.image_url ? (
+                <MealImage
+                  src={meal.image_url}
+                  alt=""
+                  className="h-44 w-full object-cover sm:h-48"
                 />
-                {meal.image_url ? (
-                  <MealImage
-                    src={meal.image_url}
-                    alt=""
-                    className="h-16 w-16 shrink-0 rounded-md object-cover"
-                  />
-                ) : (
-                  <span className="h-16 w-16 shrink-0 rounded-md bg-neutral-100" />
-                )}
+              ) : (
+                <div className="flex h-44 w-full items-center justify-center bg-neutral-100 sm:h-48">
+                  <UtensilsCrossed className="h-10 w-10 text-neutral-300" />
+                </div>
+              )}
+              {checked && (
+                <span className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-accent text-white shadow">
+                  <Check className="h-4 w-4" />
+                </span>
+              )}
+              <p className="px-4 py-3 text-base font-medium text-neutral-900">
                 {meal.name}
-              </label>
-            </li>
+              </p>
+            </label>
           );
         })}
-      </ul>
+      </div>
 
       <p className="mb-2 text-sm text-neutral-500">
         {selected.length} / 3 selected

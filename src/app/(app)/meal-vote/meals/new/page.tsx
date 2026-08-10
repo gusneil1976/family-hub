@@ -2,8 +2,13 @@ import { requireAdmin } from "@/lib/auth";
 import type { Category } from "@/lib/types";
 import { NewMealClient } from "./new-meal-client";
 
-export default async function NewMealPage() {
+export default async function NewMealPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ url?: string }>;
+}) {
   const { supabase } = await requireAdmin();
+  const { url } = await searchParams;
 
   const { data: categories } = await supabase
     .from("categories")
@@ -16,7 +21,7 @@ export default async function NewMealPage() {
       <h1 className="mb-4 text-2xl font-bold text-foreground">
         Add a meal
       </h1>
-      <NewMealClient categories={categories ?? []} />
+      <NewMealClient categories={categories ?? []} initialUrl={url} />
     </div>
   );
 }

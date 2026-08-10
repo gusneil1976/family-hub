@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
+import { ImportFromUrlBox } from "./import-from-url-box";
 import { MealList, type MealRow } from "./meal-list";
 
 export default async function MealsPage() {
@@ -35,6 +36,8 @@ export default async function MealsPage() {
           )
         }
       />
+
+      {profile?.is_admin && <ImportFromUrlBox />}
 
       {!meals?.length ? (
         <p className="text-sm text-neutral-500">

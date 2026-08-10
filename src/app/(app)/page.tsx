@@ -41,7 +41,7 @@ export default async function HubPage() {
   if (profile?.has_mini_breaks_access) {
     apps.push({
       name: "Mini Breaks",
-      description: "Coming soon.",
+      description: "Plan trip ideas — dates, links, and travel documents.",
       href: "/mini-breaks",
       icon: Plane,
     });

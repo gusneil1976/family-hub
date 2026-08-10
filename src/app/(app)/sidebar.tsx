@@ -17,6 +17,7 @@ import {
   Palette,
   Plane,
   ShieldCheck,
+  Tag,
   Target,
   Trophy,
   Upload,
@@ -89,6 +90,25 @@ const SPEND_TRACKER_NAV: NavItem[] = [
     href: "/spend-tracker/vendors",
     icon: Users,
     match: exact("/spend-tracker/vendors"),
+  },
+];
+
+const MINI_BREAKS_NAV: NavItem[] = [
+  {
+    label: "Mini Breaks",
+    href: "/mini-breaks",
+    icon: Plane,
+    match: (p) =>
+      p === "/mini-breaks" ||
+      p.startsWith("/mini-breaks/new") ||
+      /^\/mini-breaks\/[^/]+$/.test(p) ||
+      /^\/mini-breaks\/[^/]+\/edit$/.test(p),
+  },
+  {
+    label: "Categories",
+    href: "/mini-breaks/categories",
+    icon: Tag,
+    match: exact("/mini-breaks/categories"),
   },
 ];
 
@@ -198,7 +218,9 @@ export function Sidebar({
         ]
       : inSpendTracker
         ? SPEND_TRACKER_NAV
-        : [];
+        : inMiniBreaks
+          ? MINI_BREAKS_NAV
+          : [];
 
   return (
     <>
@@ -288,7 +310,13 @@ export function Sidebar({
         {contextNav.length > 0 && (
           <>
             <p className="mt-4 px-2 text-xs font-semibold uppercase tracking-wide text-sidebar-muted">
-              {inMealVote ? "Meal Vote" : inHouseTasks ? "House Tasks" : "Spend Tracker"}
+              {inMealVote
+                ? "Meal Vote"
+                : inHouseTasks
+                  ? "House Tasks"
+                  : inSpendTracker
+                    ? "Spend Tracker"
+                    : "Mini Breaks"}
             </p>
             {contextNav.map((item) => (
               <SidebarLink

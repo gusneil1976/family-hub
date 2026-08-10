@@ -143,3 +143,36 @@ export type SpendBudget = {
   amount: number;
   created_at: string;
 };
+
+export type MiniBreak = {
+  id: string;
+  title: string;
+  date_from: string | null;
+  date_to: string | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+};
+
+export type MiniBreakUrlCategory = {
+  id: string;
+  name: string;
+  created_at: string;
+};
+
+export type MiniBreakUrl = {
+  id: string;
+  mini_break_id: string;
+  category_id: string | null;
+  url: string;
+  created_at: string;
+};
+
+export type MiniBreakFile = {
+  id: string;
+  mini_break_id: string;
+  file_path: string;
+  description: string | null;
+  uploaded_by: string;
+  created_at: string;
+};

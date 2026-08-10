@@ -24,7 +24,7 @@ export type Meal = {
   image_url: string | null;
   owner_id: string;
   category_id: string | null;
-  excluded_from_voting: boolean;
+  is_weekly_meal: boolean;
   source_url: string | null;
   created_at: string;
   updated_at: string;
@@ -48,7 +48,6 @@ export type VotingCycle = {
   created_at: string;
   published_at: string | null;
   closed_at: string | null;
-  category_ids: string[] | null;
 };
 
 export type ShortlistEntry = {

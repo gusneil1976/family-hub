@@ -21,14 +21,9 @@ async function getActiveCycle(supabase: SupabaseClient) {
 
 export async function generateShortlist(
   _prevState: ActionState,
-  formData: FormData,
+  _formData: FormData,
 ): Promise<ActionState> {
   const { supabase, user } = await requireAdmin();
-
-  const categoryIds = formData.getAll("category_id").map(String);
-  if (categoryIds.length === 0) {
-    return { error: "Pick at least one category to generate a shortlist." };
-  }
 
   let cycle = await getActiveCycle(supabase);
 
@@ -42,35 +37,27 @@ export async function generateShortlist(
   if (!cycle) {
     const { data: newCycle, error } = await supabase
       .from("voting_cycles")
-      .insert({ status: "draft", created_by: user.id, category_ids: categoryIds })
+      .insert({ status: "draft", created_by: user.id })
       .select("*")
       .single<VotingCycle>();
     if (error || !newCycle) {
       return { error: error?.message ?? "Failed to start a new cycle." };
     }
     cycle = newCycle;
-  } else {
-    const { error: updateError } = await supabase
-      .from("voting_cycles")
-      .update({ category_ids: categoryIds })
-      .eq("id", cycle.id);
-    if (updateError) {
-      return { error: updateError.message };
-    }
   }
 
   const { data: eligibleMeals, error: mealsError } = await supabase
     .from("meals")
     .select("id")
-    .in("category_id", categoryIds)
-    .eq("excluded_from_voting", false);
+    .eq("is_weekly_meal", true);
 
   if (mealsError) {
     return { error: mealsError.message };
   }
   if (!eligibleMeals || eligibleMeals.length === 0) {
     return {
-      error: "No eligible meals in the selected categories.",
+      error:
+        "No meals are flagged as weekly meals yet. Tick some from the meal library first.",
     };
   }
 
@@ -131,11 +118,6 @@ export async function topUpShortlist(
     return { error: "No draft shortlist to top up." };
   }
 
-  const categoryIds = cycle.category_ids ?? [];
-  if (categoryIds.length === 0) {
-    return { error: "This shortlist has no categories set." };
-  }
-
   const { data: currentEntries, error: currentError } = await supabase
     .from("shortlist_entries")
     .select("meal_id")
@@ -153,15 +135,14 @@ export async function topUpShortlist(
   const { data: eligibleMeals, error: mealsError } = await supabase
     .from("meals")
     .select("id")
-    .in("category_id", categoryIds)
-    .eq("excluded_from_voting", false);
+    .eq("is_weekly_meal", true);
   if (mealsError) {
     return { error: mealsError.message };
   }
 
   const available = (eligibleMeals ?? []).filter((m) => !currentIds.has(m.id));
   if (available.length === 0) {
-    return { error: "No additional eligible meals to add." };
+    return { error: "No additional weekly meals to add." };
   }
 
   const picked = [...available]

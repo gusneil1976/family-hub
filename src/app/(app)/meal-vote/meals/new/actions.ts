@@ -20,7 +20,6 @@ export async function createMeal(
   const servingsRaw = formData.get("servings");
   const servings = servingsRaw ? Number(servingsRaw) : null;
   const categoryId = String(formData.get("category_id") ?? "") || null;
-  const excludedFromVoting = formData.get("excluded_from_voting") === "on";
   const sourceUrl = String(formData.get("source_url") ?? "").trim() || null;
   const externalImageUrl =
     String(formData.get("external_image_url") ?? "").trim() || null;
@@ -34,7 +33,6 @@ export async function createMeal(
       notes: String(formData.get("notes") ?? "") || null,
       owner_id: user.id,
       category_id: categoryId,
-      excluded_from_voting: excludedFromVoting,
       source_url: sourceUrl,
       image_url: externalImageUrl,
     })

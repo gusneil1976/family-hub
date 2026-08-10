@@ -22,7 +22,6 @@ export async function updateMeal(
   const servingsRaw = formData.get("servings");
   const servings = servingsRaw ? Number(servingsRaw) : null;
   const categoryId = String(formData.get("category_id") ?? "") || null;
-  const excludedFromVoting = formData.get("excluded_from_voting") === "on";
   const sourceUrl = String(formData.get("source_url") ?? "").trim() || null;
 
   const { error: mealError } = await supabase
@@ -33,7 +32,6 @@ export async function updateMeal(
       recipe_body: String(formData.get("recipe_body") ?? "") || null,
       notes: String(formData.get("notes") ?? "") || null,
       category_id: categoryId,
-      excluded_from_voting: excludedFromVoting,
       source_url: sourceUrl,
     })
     .eq("id", mealId);
@@ -106,7 +104,7 @@ export async function deleteMeal(mealId: string) {
   if (error) {
     throw new Error(
       error.message.toLowerCase().includes("foreign key")
-        ? "Can't delete — this meal has voting history. Use 'Exclude from voting' instead."
+        ? "Can't delete — this meal has voting history. Untick 'Weekly meal' on the meal library instead."
         : error.message,
     );
   }

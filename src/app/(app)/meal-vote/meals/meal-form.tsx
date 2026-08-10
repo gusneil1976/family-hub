@@ -149,18 +149,6 @@ export function MealForm({
       </div>
 
       <div>
-        <label className="flex items-center gap-1.5 text-sm text-neutral-700">
-          <input
-            type="checkbox"
-            name="excluded_from_voting"
-            defaultChecked={meal?.excluded_from_voting ?? false}
-            className="h-4 w-4"
-          />
-          Exclude from voting (never include this meal in a shortlist draw)
-        </label>
-      </div>
-
-      <div>
         <label
           htmlFor="image"
           className="mb-1 block text-sm font-medium text-neutral-700"

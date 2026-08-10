@@ -4,12 +4,19 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Meal } from "@/lib/types";
 import { MealImage } from "./meal-image";
+import { WeeklyMealToggle } from "./weekly-meal-toggle";
 
 export type MealRow = Meal & { categories: { name: string } | null };
 
 const UNCATEGORIZED = "Uncategorized";
 
-export function MealList({ meals }: { meals: MealRow[] }) {
+export function MealList({
+  meals,
+  isAdmin,
+}: {
+  meals: MealRow[];
+  isAdmin: boolean;
+}) {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -60,10 +67,13 @@ export function MealList({ meals }: { meals: MealRow[] }) {
             </h2>
             <ul className="divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
               {categoryMeals.map((meal) => (
-                <li key={meal.id}>
+                <li
+                  key={meal.id}
+                  className="flex items-center gap-3 px-4 py-3"
+                >
                   <Link
                     href={`/meal-vote/meals/${meal.id}`}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-neutral-50"
+                    className="flex flex-1 items-center gap-3 hover:opacity-80"
                   >
                     {meal.image_url ? (
                       <MealImage
@@ -83,13 +93,14 @@ export function MealList({ meals }: { meals: MealRow[] }) {
                           Serves {meal.servings}
                         </span>
                       )}
-                      {meal.excluded_from_voting && (
-                        <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                          Not in voting
-                        </span>
-                      )}
                     </span>
                   </Link>
+                  {isAdmin && (
+                    <WeeklyMealToggle
+                      mealId={meal.id}
+                      isWeekly={meal.is_weekly_meal}
+                    />
+                  )}
                 </li>
               ))}
             </ul>

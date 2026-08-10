@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
-import type { Category, Meal, VotingCycle } from "@/lib/types";
+import type { Meal, VotingCycle } from "@/lib/types";
 import { ActionButton } from "./action-button";
 import {
   closeVoting,
@@ -10,18 +10,11 @@ import {
 } from "./actions";
 import { SHORTLIST_SIZE } from "./constants";
 import { RemoveItemButton } from "./remove-item-button";
-import { ShortlistGenerateForm } from "./shortlist-generate-form";
 
 type ShortlistRow = { id: string; meal_id: string; meals: Meal };
 
 export default async function AdminShortlistPage() {
   const { supabase } = await requireAdmin();
-
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("*")
-    .order("name")
-    .returns<Category[]>();
 
   const { data: cycle } = await supabase
     .from("voting_cycles")
@@ -51,52 +44,31 @@ export default async function AdminShortlistPage() {
     voteCounts.set(v.meal_id, (voteCounts.get(v.meal_id) ?? 0) + 1);
   });
 
-  const activeCategoryNames = (cycle?.category_ids ?? [])
-    .map((id) => categories?.find((c) => c.id === id)?.name)
-    .filter(Boolean)
-    .join(", ");
-
   return (
     <div>
-      <p className="mb-4 text-sm">
-        <Link href="/meal-vote/admin/categories" className="underline">
-          Manage categories
-        </Link>
-      </p>
-
       <h1 className="mb-4 text-2xl font-bold text-foreground">
         Weekly shortlist
       </h1>
 
-      {!categories?.length && (
-        <p className="text-sm text-neutral-500">
-          No categories yet.{" "}
-          <Link href="/meal-vote/admin/categories" className="underline">
-            Add one
-          </Link>{" "}
-          before generating a shortlist.
-        </p>
-      )}
-
-      {!!categories?.length && !cycle && (
+      {!cycle && (
         <div>
           <p className="mb-3 text-sm text-neutral-500">
-            No shortlist in progress. Choose which categories to draw from —
-            e.g. just &quot;Main&quot; for the weekly family vote, or
-            &quot;Starter&quot; and &quot;Dessert&quot; when picking options
-            for an event.
+            No shortlist in progress. Generating one draws randomly from
+            meals ticked &quot;Weekly meal&quot; on the{" "}
+            <Link href="/meal-vote/meals" className="underline">
+              meal library
+            </Link>
+            .
           </p>
-          <ShortlistGenerateForm
+          <ActionButton
             action={generateShortlist}
-            categories={categories}
-            selectedIds={[]}
             label="Generate shortlist"
             pendingLabel="Generating…"
           />
         </div>
       )}
 
-      {cycle?.status === "draft" && !!categories?.length && (
+      {cycle?.status === "draft" && (
         <div>
           <p className="mb-3 text-sm text-neutral-500">
             Draft shortlist — only you can see this. Remove any you don&apos;t
@@ -126,12 +98,11 @@ export default async function AdminShortlistPage() {
             />
           </div>
           <div className="mb-4">
-            <ShortlistGenerateForm
+            <ActionButton
               action={generateShortlist}
-              categories={categories}
-              selectedIds={cycle.category_ids ?? []}
               label="Re-roll (replace all)"
               pendingLabel="Rolling…"
+              variant="secondary"
             />
           </div>
           <ActionButton
@@ -145,8 +116,7 @@ export default async function AdminShortlistPage() {
       {cycle?.status === "live" && (
         <div>
           <p className="mb-1 text-sm text-neutral-500">
-            Voting is live{activeCategoryNames && ` — ${activeCategoryNames}`}
-            . Current standing (updates as votes come in):
+            Voting is live. Current standing (updates as votes come in):
           </p>
           <ul className="mb-4 mt-3 divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
             {shortlist

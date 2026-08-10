@@ -18,12 +18,20 @@ export default async function MealsPage() {
         title="Meal library"
         action={
           profile?.is_admin && (
-            <Link
-              href="/meal-vote/meals/new"
-              className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
-            >
-              Add meal
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/meal-vote/admin/categories"
+                className="text-sm text-neutral-500 underline hover:text-neutral-900"
+              >
+                Manage categories
+              </Link>
+              <Link
+                href="/meal-vote/meals/new"
+                className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
+              >
+                Add meal
+              </Link>
+            </div>
           )
         }
       />
@@ -36,7 +44,7 @@ export default async function MealsPage() {
             : "Check back once the admin has added some."}
         </p>
       ) : (
-        <MealList meals={meals} />
+        <MealList meals={meals} isAdmin={!!profile?.is_admin} />
       )}
     </div>
   );

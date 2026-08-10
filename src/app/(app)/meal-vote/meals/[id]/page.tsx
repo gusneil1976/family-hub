@@ -51,9 +51,9 @@ export default async function MealDetailPage({
             {meal.categories?.name && meal.servings && " · "}
             {meal.servings && <span>Serves {meal.servings}</span>}
           </p>
-          {meal.excluded_from_voting && (
-            <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-              Not included in voting
+          {meal.is_weekly_meal && (
+            <span className="mt-1 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              Weekly meal
             </span>
           )}
           {meal.source_url && (

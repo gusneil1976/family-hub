@@ -2,7 +2,12 @@
 
 import { useState, useTransition } from "react";
 import type { BakingProjectStep } from "@/lib/types";
-import { deleteStep, setStepWeight, toggleStepComplete } from "./actions";
+import {
+  completeStepAndRepeat,
+  deleteStep,
+  setStepWeight,
+  toggleStepComplete,
+} from "./actions";
 
 export function StepRow({
   projectId,
@@ -24,29 +29,66 @@ export function StepRow({
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
       <div>
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={!!step.completed_at}
-            disabled={pending}
-            onChange={(e) =>
-              startTransition(() =>
-                toggleStepComplete(projectId, step.id, e.target.checked),
-              )
-            }
-            className="h-4 w-4"
-          />
-          <span
-            className={
-              step.completed_at
-                ? "text-neutral-400 line-through"
-                : "text-neutral-900"
-            }
-          >
-            {step.label}
-          </span>
-        </label>
-        <p className="mt-0.5 pl-6 text-xs text-neutral-500">
+        {!step.completed_at && step.recurrence_interval_days ? (
+          <div>
+            <span className="text-neutral-900">{step.label}</span>
+            <span className="ml-2 text-xs text-neutral-400">
+              repeats every {step.recurrence_interval_days}d
+            </span>
+            <div className="mt-1 flex items-center gap-2">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() =>
+                  startTransition(() =>
+                    toggleStepComplete(projectId, step.id, true),
+                  )
+                }
+                className="rounded-md border border-neutral-300 px-2 py-0.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+              >
+                Complete
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() =>
+                  startTransition(() => completeStepAndRepeat(projectId, step.id))
+                }
+                className="rounded-md border border-accent px-2 py-0.5 text-xs font-medium text-accent hover:bg-accent/10 disabled:opacity-50"
+              >
+                Complete &amp; repeat
+              </button>
+            </div>
+          </div>
+        ) : (
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={!!step.completed_at}
+              disabled={pending}
+              onChange={(e) =>
+                startTransition(() =>
+                  toggleStepComplete(projectId, step.id, e.target.checked),
+                )
+              }
+              className="h-4 w-4"
+            />
+            <span
+              className={
+                step.completed_at
+                  ? "text-neutral-400 line-through"
+                  : "text-neutral-900"
+              }
+            >
+              {step.label}
+            </span>
+          </label>
+        )}
+        <p
+          className={`mt-0.5 text-xs text-neutral-500 ${
+            !step.completed_at && step.recurrence_interval_days ? "" : "pl-6"
+          }`}
+        >
           {step.due_date}
         </p>
       </div>

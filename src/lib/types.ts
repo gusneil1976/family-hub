@@ -204,6 +204,8 @@ export type BakingTemplateStep = {
   offset_days: number;
   label: string;
   sort_order: number;
+  recurrence_interval_days: number | null;
+  recurrence_count: number | null;
 };
 
 export type BakingProject = {
@@ -225,5 +227,6 @@ export type BakingProjectStep = {
   completed_at: string | null;
   weight: number | null;
   sort_order: number;
+  recurrence_interval_days: number | null;
   created_at: string;
 };

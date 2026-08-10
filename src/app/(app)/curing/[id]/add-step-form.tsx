@@ -44,6 +44,22 @@ export function AddStepForm({ projectId }: { projectId: string }) {
           className="w-full min-w-[10rem] rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-accent focus:outline-none"
         />
       </div>
+      <div>
+        <label
+          htmlFor="recurrence_interval_days"
+          className="mb-1 block text-sm font-medium text-neutral-700"
+        >
+          Repeats every (days)
+        </label>
+        <input
+          id="recurrence_interval_days"
+          name="recurrence_interval_days"
+          type="number"
+          min={1}
+          placeholder="one-off"
+          className="w-28 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-accent focus:outline-none"
+        />
+      </div>
       <button
         type="submit"
         disabled={pending}

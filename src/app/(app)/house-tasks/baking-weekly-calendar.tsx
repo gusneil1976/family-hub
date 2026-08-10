@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useTransition } from "react";
-import { toggleStepComplete } from "../curing/[id]/actions";
+import { completeStepAndRepeat, toggleStepComplete } from "../curing/[id]/actions";
 import type { DueBakingStep } from "../curing/get-due-steps";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -28,22 +28,51 @@ function StepCard({ step }: { step: DueBakingStep }) {
       {step.project?.name && (
         <p className="mt-0.5 text-neutral-500">{step.project.name}</p>
       )}
-      <label className="mt-1.5 flex items-center gap-1.5 text-neutral-700">
-        <input
-          type="checkbox"
-          checked={!!step.completed_at}
-          disabled={pending || !step.project}
-          onChange={(e) => {
-            if (!step.project) return;
-            const projectId = step.project.id;
-            startTransition(() =>
-              toggleStepComplete(projectId, step.id, e.target.checked),
-            );
-          }}
-          className="h-3.5 w-3.5"
-        />
-        Complete
-      </label>
+      {!step.completed_at && step.recurrence_interval_days && step.project ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              const projectId = step.project!.id;
+              startTransition(() =>
+                toggleStepComplete(projectId, step.id, true),
+              );
+            }}
+            className="rounded border border-neutral-300 px-1.5 py-0.5 text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+          >
+            Complete
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              const projectId = step.project!.id;
+              startTransition(() => completeStepAndRepeat(projectId, step.id));
+            }}
+            className="rounded border border-blue-500 px-1.5 py-0.5 text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+          >
+            Complete &amp; repeat
+          </button>
+        </div>
+      ) : (
+        <label className="mt-1.5 flex items-center gap-1.5 text-neutral-700">
+          <input
+            type="checkbox"
+            checked={!!step.completed_at}
+            disabled={pending || !step.project}
+            onChange={(e) => {
+              if (!step.project) return;
+              const projectId = step.project.id;
+              startTransition(() =>
+                toggleStepComplete(projectId, step.id, e.target.checked),
+              );
+            }}
+            className="h-3.5 w-3.5"
+          />
+          Complete
+        </label>
+      )}
     </div>
   );
 }

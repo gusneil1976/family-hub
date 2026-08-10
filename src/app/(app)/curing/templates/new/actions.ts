@@ -18,7 +18,14 @@ export async function createTemplate(
 
   const offsets = formData.getAll("offset_days").map(String);
   const labels = formData.getAll("label").map(String);
-  const steps: { offset_days: number; label: string }[] = [];
+  const recurrenceIntervals = formData.getAll("recurrence_interval_days").map(String);
+  const recurrenceCounts = formData.getAll("recurrence_count").map(String);
+  const steps: {
+    offset_days: number;
+    label: string;
+    recurrence_interval_days: number | null;
+    recurrence_count: number | null;
+  }[] = [];
   for (let i = 0; i < labels.length; i++) {
     const label = labels[i].trim();
     if (!label) continue;
@@ -26,7 +33,22 @@ export async function createTemplate(
     if (!Number.isFinite(offsetDays)) {
       return { error: `"${label}" needs a valid day number.` };
     }
-    steps.push({ offset_days: offsetDays, label });
+    const intervalRaw = recurrenceIntervals[i]?.trim();
+    const interval = intervalRaw ? Number(intervalRaw) : null;
+    if (interval !== null && (!Number.isFinite(interval) || interval <= 0)) {
+      return { error: `"${label}" has an invalid repeat interval.` };
+    }
+    const countRaw = recurrenceCounts[i]?.trim();
+    const count = interval && countRaw ? Number(countRaw) : null;
+    if (count !== null && (!Number.isFinite(count) || count <= 0)) {
+      return { error: `"${label}" has an invalid repeat count.` };
+    }
+    steps.push({
+      offset_days: offsetDays,
+      label,
+      recurrence_interval_days: interval,
+      recurrence_count: count,
+    });
   }
   if (steps.length === 0) {
     return { error: "Add at least one step." };
@@ -53,6 +75,8 @@ export async function createTemplate(
       offset_days: s.offset_days,
       label: s.label,
       sort_order: i,
+      recurrence_interval_days: s.recurrence_interval_days,
+      recurrence_count: s.recurrence_count,
     })),
   );
 

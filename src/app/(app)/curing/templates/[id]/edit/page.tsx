@@ -42,6 +42,8 @@ export default async function EditTemplatePage({
           steps: (steps ?? []).map((s) => ({
             offset_days: s.offset_days,
             label: s.label,
+            recurrence_interval_days: s.recurrence_interval_days,
+            recurrence_count: s.recurrence_count,
           })),
         }}
         submitLabel="Save changes"

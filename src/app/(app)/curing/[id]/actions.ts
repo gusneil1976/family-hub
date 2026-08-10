@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireBakingAccess } from "@/lib/auth";
-import { daysBetween } from "../date-utils";
+import { addDays, daysBetween } from "../date-utils";
 
 type ActionState = { error: string } | undefined;
 
@@ -23,10 +23,20 @@ export async function addStep(
     return { error: "Due date is required." };
   }
 
+  const intervalRaw = String(formData.get("recurrence_interval_days") ?? "").trim();
+  const recurrenceIntervalDays = intervalRaw ? Number(intervalRaw) : null;
+  if (
+    recurrenceIntervalDays !== null &&
+    (!Number.isFinite(recurrenceIntervalDays) || recurrenceIntervalDays <= 0)
+  ) {
+    return { error: "Repeat interval must be a positive number of days." };
+  }
+
   const { error } = await supabase.from("baking_project_steps").insert({
     project_id: projectId,
     label,
     due_date: dueDate,
+    recurrence_interval_days: recurrenceIntervalDays,
   });
 
   if (error) {
@@ -70,6 +80,45 @@ export async function toggleStepComplete(
   revalidatePath(`/curing/${projectId}`);
   // Completing/reopening a step also changes what shows on the House Tasks
   // calendar's third (Curing) block.
+  revalidatePath("/house-tasks");
+}
+
+// For an indefinite recurring step: complete this occurrence and schedule
+// the next one recurrence_interval_days later. No-ops if the step isn't
+// actually a recurring one.
+export async function completeStepAndRepeat(projectId: string, stepId: string) {
+  const { supabase } = await requireBakingAccess();
+
+  const { data: step } = await supabase
+    .from("baking_project_steps")
+    .select("label, due_date, recurrence_interval_days, sort_order")
+    .eq("id", stepId)
+    .single();
+
+  if (!step?.recurrence_interval_days) {
+    return;
+  }
+
+  const { error: completeError } = await supabase
+    .from("baking_project_steps")
+    .update({ completed_at: new Date().toISOString() })
+    .eq("id", stepId);
+  if (completeError) {
+    throw new Error(completeError.message);
+  }
+
+  const { error: insertError } = await supabase.from("baking_project_steps").insert({
+    project_id: projectId,
+    label: step.label,
+    due_date: addDays(step.due_date, step.recurrence_interval_days),
+    recurrence_interval_days: step.recurrence_interval_days,
+    sort_order: step.sort_order,
+  });
+  if (insertError) {
+    throw new Error(insertError.message);
+  }
+
+  revalidatePath(`/curing/${projectId}`);
   revalidatePath("/house-tasks");
 }
 

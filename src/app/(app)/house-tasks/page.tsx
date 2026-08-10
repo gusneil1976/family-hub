@@ -10,6 +10,8 @@ type TaskRow = Task & {
   assignee: { display_name: string | null } | null;
 };
 
+type PersonSummary = Pick<Profile, "id" | "display_name">;
+
 export default async function HouseTasksPage() {
   const { supabase, user, profile } = await requireUser();
 
@@ -71,6 +73,30 @@ export default async function HouseTasksPage() {
         .returns<Profile[]>()
     : { data: null };
 
+  // Kiosk has no "logged in as" identity, so "My tasks"/"Other tasks" would
+  // just be "nothing"/"everything" — with only a handful of family members,
+  // one calendar per person is more useful. Anything not assigned to one of
+  // them (e.g. an archived member) falls back into a catch-all "Other".
+  const peopleTasks = profile?.is_kiosk
+    ? (() => {
+        const people = kioskProfiles ?? [];
+        const groups: { person: PersonSummary; tasks: TaskRow[] }[] =
+          people.map((person) => ({
+            person,
+            tasks: all.filter((t) => t.assigned_to === person.id),
+          }));
+        const assignedIds = new Set(people.map((p) => p.id));
+        const leftover = all.filter((t) => !assignedIds.has(t.assigned_to));
+        if (leftover.length > 0) {
+          groups.push({
+            person: { id: "other", display_name: "Other" },
+            tasks: leftover,
+          });
+        }
+        return groups;
+      })()
+    : undefined;
+
   return (
     <div>
       <PageHeader
@@ -98,6 +124,7 @@ export default async function HouseTasksPage() {
         editableTaskIds={editableTaskIds}
         bakingSteps={bakingSteps}
         kioskProfiles={kioskProfiles ?? undefined}
+        peopleTasks={peopleTasks}
       />
     </div>
   );

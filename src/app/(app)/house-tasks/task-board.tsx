@@ -20,6 +20,11 @@ type TaskRow = Task & {
   assignee: { display_name: string | null } | null;
 };
 
+type PersonTasks = {
+  person: { id: string; display_name: string | null };
+  tasks: TaskRow[];
+};
+
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 // Local date components, not toISOString() — that's UTC, which in BST
@@ -238,12 +243,16 @@ export function TaskBoard({
   editableTaskIds,
   bakingSteps,
   kioskProfiles,
+  peopleTasks,
 }: {
   myTasks: TaskRow[];
   otherTasks: TaskRow[];
   editableTaskIds: string[];
   bakingSteps?: DueBakingStep[];
   kioskProfiles?: Profile[];
+  // Kiosk has no "logged in as" identity, so it gets one calendar/list per
+  // family member instead of the "My tasks"/"Other tasks" split below.
+  peopleTasks?: PersonTasks[];
 }) {
   const [view, setView] = useState<"list" | "calendar">("calendar");
   const [weekOffset, setWeekOffset] = useState(0);
@@ -296,27 +305,44 @@ export function TaskBoard({
 
       {view === "list" ? (
         <>
-          <section className="mb-6">
-            <h2 className="mb-2 text-sm font-semibold text-neutral-700">
-              My tasks
-            </h2>
-            <TaskGroup
-              items={myTasks}
-              editableTaskIds={editableSet}
-              kioskProfiles={kioskProfiles}
-            />
-          </section>
+          {peopleTasks ? (
+            peopleTasks.map(({ person, tasks }, i) => (
+              <section key={person.id} className={i > 0 ? "mt-6" : undefined}>
+                <h2 className="mb-2 text-sm font-semibold text-neutral-700">
+                  {person.display_name}
+                </h2>
+                <TaskGroup
+                  items={tasks}
+                  editableTaskIds={editableSet}
+                  kioskProfiles={kioskProfiles}
+                />
+              </section>
+            ))
+          ) : (
+            <>
+              <section className="mb-6">
+                <h2 className="mb-2 text-sm font-semibold text-neutral-700">
+                  My tasks
+                </h2>
+                <TaskGroup
+                  items={myTasks}
+                  editableTaskIds={editableSet}
+                  kioskProfiles={kioskProfiles}
+                />
+              </section>
 
-          <section>
-            <h2 className="mb-2 text-sm font-semibold text-neutral-700">
-              Other tasks
-            </h2>
-            <TaskGroup
-              items={otherTasks}
-              editableTaskIds={editableSet}
-              kioskProfiles={kioskProfiles}
-            />
-          </section>
+              <section>
+                <h2 className="mb-2 text-sm font-semibold text-neutral-700">
+                  Other tasks
+                </h2>
+                <TaskGroup
+                  items={otherTasks}
+                  editableTaskIds={editableSet}
+                  kioskProfiles={kioskProfiles}
+                />
+              </section>
+            </>
+          )}
         </>
       ) : (
         <div className="space-y-8">
@@ -350,22 +376,38 @@ export function TaskBoard({
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
-          <WeeklyCalendar
-            label="My tasks"
-            tasks={myTasks}
-            editableTaskIds={editableSet}
-            days={days}
-            todayKey={todayKey}
-            kioskProfiles={kioskProfiles}
-          />
-          <WeeklyCalendar
-            label="Other tasks"
-            tasks={otherTasks}
-            editableTaskIds={editableSet}
-            days={days}
-            todayKey={todayKey}
-            kioskProfiles={kioskProfiles}
-          />
+          {peopleTasks ? (
+            peopleTasks.map(({ person, tasks }) => (
+              <WeeklyCalendar
+                key={person.id}
+                label={person.display_name ?? "Unnamed"}
+                tasks={tasks}
+                editableTaskIds={editableSet}
+                days={days}
+                todayKey={todayKey}
+                kioskProfiles={kioskProfiles}
+              />
+            ))
+          ) : (
+            <>
+              <WeeklyCalendar
+                label="My tasks"
+                tasks={myTasks}
+                editableTaskIds={editableSet}
+                days={days}
+                todayKey={todayKey}
+                kioskProfiles={kioskProfiles}
+              />
+              <WeeklyCalendar
+                label="Other tasks"
+                tasks={otherTasks}
+                editableTaskIds={editableSet}
+                days={days}
+                todayKey={todayKey}
+                kioskProfiles={kioskProfiles}
+              />
+            </>
+          )}
           {bakingSteps && bakingSteps.length > 0 && (
             <BakingWeeklyCalendar
               steps={bakingSteps}

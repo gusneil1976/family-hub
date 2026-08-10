@@ -26,6 +26,7 @@ export function TransactionForm({
     amount?: number;
     category_id?: string | null;
     spent_by?: string;
+    notes?: string | null;
   };
   submitLabel: string;
 }) {
@@ -121,6 +122,22 @@ export function TransactionForm({
             No categories yet — you can add some from the Categories page.
           </p>
         )}
+      </div>
+
+      <div>
+        <label
+          htmlFor="notes"
+          className="mb-1 block text-sm font-medium text-neutral-700"
+        >
+          Notes (optional)
+        </label>
+        <textarea
+          id="notes"
+          name="notes"
+          rows={2}
+          defaultValue={defaultValues?.notes ?? ""}
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-base focus:border-accent focus:outline-none"
+        />
       </div>
 
       {spentByOptions && (

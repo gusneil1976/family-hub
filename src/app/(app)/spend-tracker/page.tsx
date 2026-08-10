@@ -10,6 +10,7 @@ type TransactionRow = {
   date: string;
   amount: number;
   spent_by: string;
+  notes: string | null;
   vendor: { name: string } | null;
   category: { name: string } | null;
   spender: { display_name: string | null } | null;
@@ -28,7 +29,7 @@ export default async function SpendTrackerPage({
   const { data: transactions } = await supabase
     .from("spend_transactions")
     .select(
-      "id, date, amount, spent_by, vendor:vendors(name), category:spend_categories(name), spender:profiles!spend_transactions_spent_by_fkey(display_name)",
+      "id, date, amount, spent_by, notes, vendor:vendors(name), category:spend_categories(name), spender:profiles!spend_transactions_spent_by_fkey(display_name)",
     )
     .gte("date", startDate)
     .lt("date", endDate)
@@ -83,6 +84,11 @@ export default async function SpendTrackerPage({
                   {t.spender?.display_name && <span> · {t.spender.display_name}</span>}
                   {t.spent_by === user.id && <span> (you)</span>}
                 </p>
+                {t.notes && (
+                  <p className="mt-0.5 max-w-xs truncate text-xs text-neutral-400">
+                    {t.notes}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <span className="font-semibold text-foreground">

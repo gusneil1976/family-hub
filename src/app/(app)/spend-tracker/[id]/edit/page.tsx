@@ -11,6 +11,7 @@ type TransactionDetail = {
   amount: number;
   category_id: string | null;
   spent_by: string;
+  notes: string | null;
   vendor: { name: string } | null;
 };
 
@@ -24,7 +25,9 @@ export default async function EditTransactionPage({
 
   const { data: transaction } = await supabase
     .from("spend_transactions")
-    .select("id, date, amount, category_id, spent_by, vendor:vendors(name)")
+    .select(
+      "id, date, amount, category_id, spent_by, notes, vendor:vendors(name)",
+    )
     .eq("id", id)
     .single<TransactionDetail>();
 
@@ -64,6 +67,7 @@ export default async function EditTransactionPage({
           amount: transaction.amount,
           category_id: transaction.category_id ?? "",
           spent_by: transaction.spent_by,
+          notes: transaction.notes,
         }}
         submitLabel="Save changes"
       />

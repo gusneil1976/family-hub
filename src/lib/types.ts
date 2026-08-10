@@ -118,6 +118,7 @@ export type SpendTransaction = {
   category_id: string | null;
   amount: number;
   spent_by: string;
+  notes: string | null;
   created_at: string;
 };
 

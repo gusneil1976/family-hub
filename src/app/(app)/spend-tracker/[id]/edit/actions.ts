@@ -28,6 +28,7 @@ export async function updateTransaction(
     String(formData.get("date") ?? "").trim() ||
     new Date().toISOString().slice(0, 10);
   const categoryId = String(formData.get("category_id") ?? "").trim() || null;
+  const notes = String(formData.get("notes") ?? "").trim() || null;
   const spentBy = String(formData.get("spent_by") ?? "").trim();
   if (!spentBy) {
     return { error: "Spent by is required." };
@@ -46,6 +47,7 @@ export async function updateTransaction(
       category_id: categoryId,
       amount,
       spent_by: spentBy,
+      notes,
     })
     .eq("id", transactionId);
 

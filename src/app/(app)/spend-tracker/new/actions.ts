@@ -26,6 +26,7 @@ export async function createTransaction(
     String(formData.get("date") ?? "").trim() ||
     new Date().toISOString().slice(0, 10);
   const categoryId = String(formData.get("category_id") ?? "").trim() || null;
+  const notes = String(formData.get("notes") ?? "").trim() || null;
 
   const vendor = await findOrCreateVendor(supabase, vendorName);
   if (vendor.error) {
@@ -38,6 +39,7 @@ export async function createTransaction(
     category_id: categoryId,
     amount,
     spent_by: user.id,
+    notes,
   });
 
   if (error) {

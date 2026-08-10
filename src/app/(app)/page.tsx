@@ -20,7 +20,7 @@ const APPS = [
   },
   {
     name: "TV Shows/Movies",
-    description: "Submit ideas for family watching time. Coming soon.",
+    description: "Suggest what to watch next and track what you've seen.",
     href: "/watch-list",
     icon: Film,
   },

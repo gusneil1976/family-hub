@@ -122,6 +122,20 @@ export type SpendTransaction = {
   created_at: string;
 };
 
+export type WatchCategory = "film" | "tv_show";
+
+export type WatchListItem = {
+  id: string;
+  title: string;
+  category: WatchCategory;
+  platform: string;
+  submitted_by: string;
+  is_watching: boolean;
+  watched: boolean;
+  watched_at: string | null;
+  created_at: string;
+};
+
 export type SpendBudget = {
   id: string;
   category_id: string;

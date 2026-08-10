@@ -137,25 +137,18 @@ function TaskCard({
 }
 
 function WeeklyCalendar({
+  label,
   tasks,
   editableTaskIds,
+  days,
+  todayKey,
 }: {
+  label: string;
   tasks: TaskRow[];
   editableTaskIds: Set<string>;
+  days: Date[];
+  todayKey: string;
 }) {
-  const weekStart = useMemo(() => startOfWeek(new Date()), []);
-  const todayKey = dateKey(new Date());
-
-  const days = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(weekStart);
-        d.setDate(d.getDate() + i);
-        return d;
-      }),
-    [weekStart],
-  );
-
   const byDay = useMemo(() => {
     const map = new Map<string, TaskRow[]>();
     for (const day of days) map.set(dateKey(day), []);
@@ -176,6 +169,7 @@ function WeeklyCalendar({
 
   return (
     <div>
+      <h2 className="mb-2 text-sm font-semibold text-neutral-700">{label}</h2>
       <div className="overflow-x-auto">
         <div className="grid min-w-[770px] grid-cols-7 gap-2">
           {days.map((day, i) => {
@@ -239,6 +233,18 @@ export function TaskBoard({
     [editableTaskIds],
   );
 
+  const weekStart = useMemo(() => startOfWeek(new Date()), []);
+  const todayKey = useMemo(() => dateKey(new Date()), []);
+  const days = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(weekStart);
+        d.setDate(d.getDate() + i);
+        return d;
+      }),
+    [weekStart],
+  );
+
   return (
     <div>
       <div className="mb-4 flex gap-2">
@@ -275,10 +281,22 @@ export function TaskBoard({
           </section>
         </>
       ) : (
-        <WeeklyCalendar
-          tasks={[...myTasks, ...otherTasks]}
-          editableTaskIds={editableSet}
-        />
+        <div className="space-y-8">
+          <WeeklyCalendar
+            label="My tasks"
+            tasks={myTasks}
+            editableTaskIds={editableSet}
+            days={days}
+            todayKey={todayKey}
+          />
+          <WeeklyCalendar
+            label="Other tasks"
+            tasks={otherTasks}
+            editableTaskIds={editableSet}
+            days={days}
+            todayKey={todayKey}
+          />
+        </div>
       )}
     </div>
   );

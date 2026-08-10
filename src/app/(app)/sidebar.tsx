@@ -25,6 +25,7 @@ import {
   UtensilsCrossed,
   Users,
   Wallet,
+  Wrench,
   X,
 } from "lucide-react";
 import { signOut } from "./actions";
@@ -289,6 +290,12 @@ export function Sidebar({
           active={pathname.startsWith("/watch-list")}
           icon={Film}
           label="TV Shows/Movies"
+        />
+        <SidebarLink
+          href="/diy-tasks"
+          active={pathname.startsWith("/diy-tasks")}
+          icon={Wrench}
+          label="DIY Tasks"
         />
         {hasSpendTrackerAccess && (
           <SidebarLink

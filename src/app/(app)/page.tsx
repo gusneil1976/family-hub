@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { Film, ListChecks, Plane, Sparkles, UtensilsCrossed, Wallet } from "lucide-react";
+import {
+  Film,
+  ListChecks,
+  Plane,
+  Sparkles,
+  UtensilsCrossed,
+  Wallet,
+  Wrench,
+} from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 
@@ -23,6 +31,12 @@ const APPS = [
     description: "Suggest what to watch next and track what you've seen.",
     href: "/watch-list",
     icon: Film,
+  },
+  {
+    name: "DIY Tasks",
+    description: "Track home-improvement projects and progress.",
+    href: "/diy-tasks",
+    icon: Wrench,
   },
 ];
 

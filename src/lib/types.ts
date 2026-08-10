@@ -176,3 +176,15 @@ export type MiniBreakFile = {
   uploaded_by: string;
   created_at: string;
 };
+
+export type DiyTask = {
+  id: string;
+  title: string;
+  project: string | null;
+  notes: string | null;
+  hours_estimate: number | null;
+  percent_complete: number;
+  completed_at: string | null;
+  created_by: string;
+  created_at: string;
+};

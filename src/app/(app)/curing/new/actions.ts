@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireBakingAccess } from "@/lib/auth";
-import { addDays } from "../date-utils";
+import { expandSteps } from "../expand-steps";
 
 type ActionState = { error: string } | undefined;
 
@@ -48,56 +48,26 @@ export async function createProject(
   if (templateId) {
     const { data: templateSteps } = await supabase
       .from("baking_template_steps")
-      .select("offset_days, label, sort_order, recurrence_interval_days, recurrence_count")
+      .select(
+        "offset_value, offset_unit, relative_to_previous, label, sort_order, recurrence_interval_value, recurrence_interval_unit, recurrence_count",
+      )
       .eq("template_id", templateId)
       .order("sort_order");
 
     if (templateSteps && templateSteps.length > 0) {
-      const projectSteps: {
-        project_id: string;
-        label: string;
-        due_date: string;
-        sort_order: number;
-        recurrence_interval_days?: number | null;
-      }[] = [];
+      const projectSteps = expandSteps(startDate, null, templateSteps);
 
-      for (const s of templateSteps) {
-        if (!s.recurrence_interval_days) {
-          projectSteps.push({
-            project_id: project.id,
-            label: s.label,
-            due_date: addDays(startDate, s.offset_days),
-            sort_order: s.sort_order,
-          });
-        } else if (s.recurrence_count) {
-          for (let i = 0; i < s.recurrence_count; i++) {
-            projectSteps.push({
-              project_id: project.id,
-              label:
-                s.recurrence_count > 1
-                  ? `${s.label} (${i + 1}/${s.recurrence_count})`
-                  : s.label,
-              due_date: addDays(
-                startDate,
-                s.offset_days + i * s.recurrence_interval_days,
-              ),
-              sort_order: s.sort_order,
-            });
-          }
-        } else {
-          // Indefinite recurrence: only the first occurrence is created now.
-          // Completing it decides whether a next one gets scheduled.
-          projectSteps.push({
-            project_id: project.id,
-            label: s.label,
-            due_date: addDays(startDate, s.offset_days),
-            sort_order: s.sort_order,
-            recurrence_interval_days: s.recurrence_interval_days,
-          });
-        }
-      }
-
-      await supabase.from("baking_project_steps").insert(projectSteps);
+      await supabase.from("baking_project_steps").insert(
+        projectSteps.map((s) => ({
+          project_id: project.id,
+          label: s.label,
+          due_date: s.due_date,
+          due_time: s.due_time,
+          recurrence_interval_value: s.recurrence_interval_value ?? null,
+          recurrence_interval_unit: s.recurrence_interval_unit ?? null,
+          pending_chain: s.pending_chain ?? null,
+        })),
+      );
     }
   }
 

@@ -29,11 +29,12 @@ export function StepRow({
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
       <div>
-        {!step.completed_at && step.recurrence_interval_days ? (
+        {!step.completed_at && step.recurrence_interval_value ? (
           <div>
             <span className="text-neutral-900">{step.label}</span>
             <span className="ml-2 text-xs text-neutral-400">
-              repeats every {step.recurrence_interval_days}d
+              repeats every {step.recurrence_interval_value}{" "}
+              {step.recurrence_interval_unit}
             </span>
             <div className="mt-1 flex items-center gap-2">
               <button
@@ -86,10 +87,11 @@ export function StepRow({
         )}
         <p
           className={`mt-0.5 text-xs text-neutral-500 ${
-            !step.completed_at && step.recurrence_interval_days ? "" : "pl-6"
+            !step.completed_at && step.recurrence_interval_value ? "" : "pl-6"
           }`}
         >
           {step.due_date}
+          {step.due_time && ` at ${step.due_time}`}
         </p>
       </div>
       <div className="flex items-center gap-3">

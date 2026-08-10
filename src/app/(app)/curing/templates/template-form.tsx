@@ -1,14 +1,28 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import type { DurationUnit } from "@/lib/types";
 
 type ActionState = { error: string } | undefined;
 
 type StepRow = {
-  offset_days: string;
+  offset_value: string;
+  offset_unit: DurationUnit;
+  relative_to_previous: boolean;
   label: string;
-  recurrence_interval_days: string;
+  recurrence_interval_value: string;
+  recurrence_interval_unit: DurationUnit;
   recurrence_count: string;
+};
+
+const EMPTY_ROW: StepRow = {
+  offset_value: "0",
+  offset_unit: "days",
+  relative_to_previous: false,
+  label: "",
+  recurrence_interval_value: "",
+  recurrence_interval_unit: "days",
+  recurrence_count: "",
 };
 
 export function TemplateForm({
@@ -20,9 +34,12 @@ export function TemplateForm({
   defaultValues?: {
     name?: string;
     steps?: {
-      offset_days: number;
+      offset_value: number;
+      offset_unit: DurationUnit;
+      relative_to_previous: boolean;
       label: string;
-      recurrence_interval_days?: number | null;
+      recurrence_interval_value?: number | null;
+      recurrence_interval_unit?: DurationUnit | null;
       recurrence_count?: number | null;
     }[];
   };
@@ -33,21 +50,17 @@ export function TemplateForm({
   const [steps, setSteps] = useState<StepRow[]>(
     defaultValues?.steps?.length
       ? defaultValues.steps.map((s) => ({
-          offset_days: String(s.offset_days),
+          offset_value: String(s.offset_value),
+          offset_unit: s.offset_unit,
+          relative_to_previous: s.relative_to_previous,
           label: s.label,
-          recurrence_interval_days: s.recurrence_interval_days
-            ? String(s.recurrence_interval_days)
+          recurrence_interval_value: s.recurrence_interval_value
+            ? String(s.recurrence_interval_value)
             : "",
+          recurrence_interval_unit: s.recurrence_interval_unit ?? "days",
           recurrence_count: s.recurrence_count ? String(s.recurrence_count) : "",
         }))
-      : [
-          {
-            offset_days: "0",
-            label: "",
-            recurrence_interval_days: "",
-            recurrence_count: "",
-          },
-        ],
+      : [{ ...EMPTY_ROW }],
   );
 
   function updateStep(index: number, patch: Partial<StepRow>) {
@@ -56,15 +69,7 @@ export function TemplateForm({
     );
   }
   function addStep() {
-    setSteps((prev) => [
-      ...prev,
-      {
-        offset_days: "",
-        label: "",
-        recurrence_interval_days: "",
-        recurrence_count: "",
-      },
-    ]);
+    setSteps((prev) => [...prev, { ...EMPTY_ROW }]);
   }
   function removeStep(index: number) {
     setSteps((prev) => prev.filter((_, i) => i !== index));
@@ -100,16 +105,46 @@ export function TemplateForm({
               className="rounded-md border border-neutral-200 p-2.5"
             >
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-neutral-500">Day</span>
+                <span className="text-sm text-neutral-500">Starts</span>
                 <input
-                  name="offset_days"
+                  name="offset_value"
                   type="number"
-                  value={row.offset_days}
+                  min={0}
+                  value={row.offset_value}
                   onChange={(e) =>
-                    updateStep(i, { offset_days: e.target.value })
+                    updateStep(i, { offset_value: e.target.value })
                   }
-                  className="w-20 rounded-md border border-neutral-300 px-2 py-1.5 text-sm focus:border-accent focus:outline-none"
+                  className="w-16 rounded-md border border-neutral-300 px-2 py-1.5 text-sm focus:border-accent focus:outline-none"
                 />
+                <select
+                  name="offset_unit"
+                  value={row.offset_unit}
+                  onChange={(e) =>
+                    updateStep(i, {
+                      offset_unit: e.target.value as DurationUnit,
+                    })
+                  }
+                  className="rounded-md border border-neutral-300 px-2 py-1.5 text-sm focus:border-accent focus:outline-none"
+                >
+                  <option value="hours">hours</option>
+                  <option value="days">days</option>
+                  <option value="weeks">weeks</option>
+                </select>
+                <select
+                  name="relative_to_previous"
+                  value={row.relative_to_previous ? "true" : "false"}
+                  onChange={(e) =>
+                    updateStep(i, {
+                      relative_to_previous: e.target.value === "true",
+                    })
+                  }
+                  className="rounded-md border border-neutral-300 px-2 py-1.5 text-sm focus:border-accent focus:outline-none"
+                >
+                  <option value="false">into the project</option>
+                  <option value="true">after the previous step</option>
+                </select>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <input
                   name="label"
                   placeholder="e.g. Check weight"
@@ -127,26 +162,41 @@ export function TemplateForm({
                   ✕
                 </button>
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2 pl-6">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="text-xs text-neutral-500">Repeats every</span>
                 <input
-                  name="recurrence_interval_days"
+                  name="recurrence_interval_value"
                   type="number"
                   min={1}
                   placeholder="—"
-                  value={row.recurrence_interval_days}
+                  value={row.recurrence_interval_value}
                   onChange={(e) =>
-                    updateStep(i, { recurrence_interval_days: e.target.value })
+                    updateStep(i, { recurrence_interval_value: e.target.value })
                   }
                   className="w-16 rounded-md border border-neutral-300 px-2 py-1 text-xs focus:border-accent focus:outline-none"
                 />
-                <span className="text-xs text-neutral-500">days, for</span>
+                <select
+                  name="recurrence_interval_unit"
+                  value={row.recurrence_interval_unit}
+                  disabled={!row.recurrence_interval_value}
+                  onChange={(e) =>
+                    updateStep(i, {
+                      recurrence_interval_unit: e.target.value as DurationUnit,
+                    })
+                  }
+                  className="rounded-md border border-neutral-300 px-2 py-1 text-xs focus:border-accent focus:outline-none disabled:bg-neutral-100"
+                >
+                  <option value="hours">hours</option>
+                  <option value="days">days</option>
+                  <option value="weeks">weeks</option>
+                </select>
+                <span className="text-xs text-neutral-500">, for</span>
                 <input
                   name="recurrence_count"
                   type="number"
                   min={1}
                   placeholder="∞"
-                  disabled={!row.recurrence_interval_days}
+                  disabled={!row.recurrence_interval_value}
                   value={row.recurrence_count}
                   onChange={(e) =>
                     updateStep(i, { recurrence_count: e.target.value })

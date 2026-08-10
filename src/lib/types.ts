@@ -198,13 +198,18 @@ export type BakingTemplate = {
   created_at: string;
 };
 
+export type DurationUnit = "hours" | "days" | "weeks";
+
 export type BakingTemplateStep = {
   id: string;
   template_id: string;
-  offset_days: number;
+  offset_value: number;
+  offset_unit: DurationUnit;
+  relative_to_previous: boolean;
   label: string;
   sort_order: number;
-  recurrence_interval_days: number | null;
+  recurrence_interval_value: number | null;
+  recurrence_interval_unit: DurationUnit | null;
   recurrence_count: number | null;
 };
 
@@ -224,9 +229,21 @@ export type BakingProjectStep = {
   project_id: string;
   label: string;
   due_date: string;
+  due_time: string | null;
   completed_at: string | null;
   weight: number | null;
   sort_order: number;
-  recurrence_interval_days: number | null;
+  recurrence_interval_value: number | null;
+  recurrence_interval_unit: DurationUnit | null;
+  pending_chain: PendingChainStep[] | null;
   created_at: string;
+};
+
+export type PendingChainStep = {
+  label: string;
+  offset_value: number;
+  offset_unit: DurationUnit;
+  recurrence_interval_value: number | null;
+  recurrence_interval_unit: DurationUnit | null;
+  recurrence_count: number | null;
 };

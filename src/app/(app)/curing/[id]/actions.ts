@@ -3,9 +3,13 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireBakingAccess } from "@/lib/auth";
-import { addDays, daysBetween } from "../date-utils";
+import type { DurationUnit } from "@/lib/types";
+import { addDuration, daysBetween } from "../date-utils";
+import { expandSteps } from "../expand-steps";
 
 type ActionState = { error: string } | undefined;
+
+const UNITS: DurationUnit[] = ["hours", "days", "weeks"];
 
 export async function addStep(
   projectId: string,
@@ -23,20 +27,27 @@ export async function addStep(
     return { error: "Due date is required." };
   }
 
-  const intervalRaw = String(formData.get("recurrence_interval_days") ?? "").trim();
-  const recurrenceIntervalDays = intervalRaw ? Number(intervalRaw) : null;
+  const intervalRaw = String(formData.get("recurrence_interval_value") ?? "").trim();
+  const recurrenceIntervalValue = intervalRaw ? Number(intervalRaw) : null;
   if (
-    recurrenceIntervalDays !== null &&
-    (!Number.isFinite(recurrenceIntervalDays) || recurrenceIntervalDays <= 0)
+    recurrenceIntervalValue !== null &&
+    (!Number.isFinite(recurrenceIntervalValue) || recurrenceIntervalValue <= 0)
   ) {
-    return { error: "Repeat interval must be a positive number of days." };
+    return { error: "Repeat interval must be a positive number." };
   }
+  const unitRaw = String(formData.get("recurrence_interval_unit") ?? "");
+  const recurrenceIntervalUnit = recurrenceIntervalValue
+    ? UNITS.includes(unitRaw as DurationUnit)
+      ? (unitRaw as DurationUnit)
+      : "days"
+    : null;
 
   const { error } = await supabase.from("baking_project_steps").insert({
     project_id: projectId,
     label,
     due_date: dueDate,
-    recurrence_interval_days: recurrenceIntervalDays,
+    recurrence_interval_value: recurrenceIntervalValue,
+    recurrence_interval_unit: recurrenceIntervalUnit,
   });
 
   if (error) {
@@ -68,6 +79,37 @@ export async function toggleStepComplete(
 ) {
   const { supabase } = await requireBakingAccess();
 
+  if (completed) {
+    // If this step was blocking a chain of "relative to previous" steps
+    // (because it's an indefinite recurring step and its real end date
+    // wasn't known until now), resolve and materialize that chain,
+    // anchored at this step's actual due date/time.
+    const { data: step } = await supabase
+      .from("baking_project_steps")
+      .select("due_date, due_time, pending_chain")
+      .eq("id", stepId)
+      .single();
+
+    if (step?.pending_chain && step.pending_chain.length > 0) {
+      const nextSteps = expandSteps(step.due_date, step.due_time, step.pending_chain);
+      await supabase.from("baking_project_steps").insert(
+        nextSteps.map((s) => ({
+          project_id: projectId,
+          label: s.label,
+          due_date: s.due_date,
+          due_time: s.due_time,
+          recurrence_interval_value: s.recurrence_interval_value ?? null,
+          recurrence_interval_unit: s.recurrence_interval_unit ?? null,
+          pending_chain: s.pending_chain ?? null,
+        })),
+      );
+      await supabase
+        .from("baking_project_steps")
+        .update({ pending_chain: null })
+        .eq("id", stepId);
+    }
+  }
+
   const { error } = await supabase
     .from("baking_project_steps")
     .update({ completed_at: completed ? new Date().toISOString() : null })
@@ -84,18 +126,22 @@ export async function toggleStepComplete(
 }
 
 // For an indefinite recurring step: complete this occurrence and schedule
-// the next one recurrence_interval_days later. No-ops if the step isn't
-// actually a recurring one.
+// the next one recurrence_interval_value/unit later. No-ops if the step
+// isn't actually a recurring one. pending_chain (whatever's deferred to run
+// after this series eventually ends) carries forward unchanged, since the
+// series hasn't ended yet.
 export async function completeStepAndRepeat(projectId: string, stepId: string) {
   const { supabase } = await requireBakingAccess();
 
   const { data: step } = await supabase
     .from("baking_project_steps")
-    .select("label, due_date, recurrence_interval_days, sort_order")
+    .select(
+      "label, due_date, due_time, recurrence_interval_value, recurrence_interval_unit, sort_order, pending_chain",
+    )
     .eq("id", stepId)
     .single();
 
-  if (!step?.recurrence_interval_days) {
+  if (!step?.recurrence_interval_value) {
     return;
   }
 
@@ -107,12 +153,18 @@ export async function completeStepAndRepeat(projectId: string, stepId: string) {
     throw new Error(completeError.message);
   }
 
+  const unit = step.recurrence_interval_unit ?? "days";
+  const next = addDuration(step.due_date, step.due_time, step.recurrence_interval_value, unit);
+
   const { error: insertError } = await supabase.from("baking_project_steps").insert({
     project_id: projectId,
     label: step.label,
-    due_date: addDays(step.due_date, step.recurrence_interval_days),
-    recurrence_interval_days: step.recurrence_interval_days,
+    due_date: next.due_date,
+    due_time: next.due_time,
+    recurrence_interval_value: step.recurrence_interval_value,
+    recurrence_interval_unit: unit,
     sort_order: step.sort_order,
+    pending_chain: step.pending_chain,
   });
   if (insertError) {
     throw new Error(insertError.message);
@@ -215,7 +267,9 @@ export async function saveAsTemplate(
     .insert(
       steps.map((s, i) => ({
         template_id: template.id,
-        offset_days: daysBetween(project.start_date, s.due_date),
+        offset_value: daysBetween(project.start_date, s.due_date),
+        offset_unit: "days",
+        relative_to_previous: false,
         label: s.label,
         sort_order: i,
       })),

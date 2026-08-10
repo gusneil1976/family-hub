@@ -40,9 +40,12 @@ export default async function EditTemplatePage({
         defaultValues={{
           name: template.name,
           steps: (steps ?? []).map((s) => ({
-            offset_days: s.offset_days,
+            offset_value: s.offset_value,
+            offset_unit: s.offset_unit,
+            relative_to_previous: s.relative_to_previous,
             label: s.label,
-            recurrence_interval_days: s.recurrence_interval_days,
+            recurrence_interval_value: s.recurrence_interval_value,
+            recurrence_interval_unit: s.recurrence_interval_unit,
             recurrence_count: s.recurrence_count,
           })),
         }}

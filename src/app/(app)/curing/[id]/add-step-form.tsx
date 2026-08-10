@@ -46,19 +46,30 @@ export function AddStepForm({ projectId }: { projectId: string }) {
       </div>
       <div>
         <label
-          htmlFor="recurrence_interval_days"
+          htmlFor="recurrence_interval_value"
           className="mb-1 block text-sm font-medium text-neutral-700"
         >
-          Repeats every (days)
+          Repeats every
         </label>
-        <input
-          id="recurrence_interval_days"
-          name="recurrence_interval_days"
-          type="number"
-          min={1}
-          placeholder="one-off"
-          className="w-28 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-accent focus:outline-none"
-        />
+        <div className="flex gap-1">
+          <input
+            id="recurrence_interval_value"
+            name="recurrence_interval_value"
+            type="number"
+            min={1}
+            placeholder="one-off"
+            className="w-20 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-accent focus:outline-none"
+          />
+          <select
+            name="recurrence_interval_unit"
+            defaultValue="days"
+            className="rounded-md border border-neutral-300 px-2 py-2 text-sm focus:border-accent focus:outline-none"
+          >
+            <option value="hours">hours</option>
+            <option value="days">days</option>
+            <option value="weeks">weeks</option>
+          </select>
+        </div>
       </div>
       <button
         type="submit"

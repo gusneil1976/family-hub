@@ -6,9 +6,10 @@ export type DueBakingStep = {
   id: string;
   label: string;
   due_date: string;
+  due_time: string | null;
   completed_at: string | null;
   weight: number | null;
-  recurrence_interval_days: number | null;
+  recurrence_interval_value: number | null;
   project: { id: string; name: string } | null;
 };
 
@@ -24,7 +25,7 @@ export async function getUpcomingBakingSteps(
   const { data } = await supabase
     .from("baking_project_steps")
     .select(
-      "id, label, due_date, completed_at, weight, recurrence_interval_days, project:baking_projects(id, name)",
+      "id, label, due_date, due_time, completed_at, weight, recurrence_interval_value, project:baking_projects(id, name)",
     )
     .gte("due_date", startDate)
     .lt("due_date", endDate)

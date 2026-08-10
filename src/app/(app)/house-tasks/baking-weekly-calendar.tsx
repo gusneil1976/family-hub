@@ -25,10 +25,13 @@ function StepCard({ step }: { step: DueBakingStep }) {
       >
         {step.label}
       </span>
+      {step.due_time && (
+        <p className="mt-0.5 text-neutral-500">{step.due_time}</p>
+      )}
       {step.project?.name && (
         <p className="mt-0.5 text-neutral-500">{step.project.name}</p>
       )}
-      {!step.completed_at && step.recurrence_interval_days && step.project ? (
+      {!step.completed_at && step.recurrence_interval_value && step.project ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <button
             type="button"

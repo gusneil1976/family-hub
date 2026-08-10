@@ -3,8 +3,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireBakingAccess } from "@/lib/auth";
+import type { DurationUnit } from "@/lib/types";
 
 type ActionState = { error: string } | undefined;
+
+const UNITS: DurationUnit[] = ["hours", "days", "weeks"];
 
 export async function updateTemplate(
   templateId: string,
@@ -18,37 +21,61 @@ export async function updateTemplate(
     return { error: "Template name is required." };
   }
 
-  const offsets = formData.getAll("offset_days").map(String);
+  const offsetValues = formData.getAll("offset_value").map(String);
+  const offsetUnits = formData.getAll("offset_unit").map(String);
+  const relativeFlags = formData.getAll("relative_to_previous").map(String);
   const labels = formData.getAll("label").map(String);
-  const recurrenceIntervals = formData.getAll("recurrence_interval_days").map(String);
+  const recurrenceIntervals = formData.getAll("recurrence_interval_value").map(String);
+  const recurrenceUnits = formData.getAll("recurrence_interval_unit").map(String);
   const recurrenceCounts = formData.getAll("recurrence_count").map(String);
+
   const steps: {
-    offset_days: number;
+    offset_value: number;
+    offset_unit: DurationUnit;
+    relative_to_previous: boolean;
     label: string;
-    recurrence_interval_days: number | null;
+    recurrence_interval_value: number | null;
+    recurrence_interval_unit: DurationUnit | null;
     recurrence_count: number | null;
   }[] = [];
+
   for (let i = 0; i < labels.length; i++) {
     const label = labels[i].trim();
     if (!label) continue;
-    const offsetDays = Number(offsets[i]);
-    if (!Number.isFinite(offsetDays)) {
-      return { error: `"${label}" needs a valid day number.` };
+
+    const offsetValue = Number(offsetValues[i]);
+    if (!Number.isFinite(offsetValue)) {
+      return { error: `"${label}" needs a valid start offset.` };
     }
+    const offsetUnit = UNITS.includes(offsetUnits[i] as DurationUnit)
+      ? (offsetUnits[i] as DurationUnit)
+      : "days";
+
     const intervalRaw = recurrenceIntervals[i]?.trim();
     const interval = intervalRaw ? Number(intervalRaw) : null;
     if (interval !== null && (!Number.isFinite(interval) || interval <= 0)) {
       return { error: `"${label}" has an invalid repeat interval.` };
     }
+    const recurrenceUnit =
+      interval && UNITS.includes(recurrenceUnits[i] as DurationUnit)
+        ? (recurrenceUnits[i] as DurationUnit)
+        : interval
+          ? "days"
+          : null;
+
     const countRaw = recurrenceCounts[i]?.trim();
     const count = interval && countRaw ? Number(countRaw) : null;
     if (count !== null && (!Number.isFinite(count) || count <= 0)) {
       return { error: `"${label}" has an invalid repeat count.` };
     }
+
     steps.push({
-      offset_days: offsetDays,
+      offset_value: offsetValue,
+      offset_unit: offsetUnit,
+      relative_to_previous: relativeFlags[i] === "true",
       label,
-      recurrence_interval_days: interval,
+      recurrence_interval_value: interval,
+      recurrence_interval_unit: recurrenceUnit,
       recurrence_count: count,
     });
   }
@@ -85,10 +112,13 @@ export async function updateTemplate(
     .insert(
       steps.map((s, i) => ({
         template_id: templateId,
-        offset_days: s.offset_days,
+        offset_value: s.offset_value,
+        offset_unit: s.offset_unit,
+        relative_to_previous: s.relative_to_previous,
         label: s.label,
         sort_order: i,
-        recurrence_interval_days: s.recurrence_interval_days,
+        recurrence_interval_value: s.recurrence_interval_value,
+        recurrence_interval_unit: s.recurrence_interval_unit,
         recurrence_count: s.recurrence_count,
       })),
     );

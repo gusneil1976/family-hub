@@ -85,7 +85,11 @@ export default async function WatchListPage() {
   const all = items ?? [];
   const canManage = (item: ItemRow) =>
     item.submitted_by === user.id || !!profile?.is_admin;
-  const active = all.filter((i) => !i.watched);
+  // Watching items float to the top of their section; stable sort keeps
+  // the existing created_at-desc order within each group.
+  const active = all
+    .filter((i) => !i.watched)
+    .sort((a, b) => Number(b.is_watching) - Number(a.is_watching));
   const archive = all
     .filter((i) => i.watched)
     .sort((a, b) => (b.watched_at ?? "").localeCompare(a.watched_at ?? ""));

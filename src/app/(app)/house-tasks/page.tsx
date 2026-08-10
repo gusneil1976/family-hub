@@ -1,87 +1,13 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { Task } from "@/lib/types";
-import { Badge, PageHeader, StatTile, StatTileRow } from "@/components/ui";
-import { CompleteButton } from "./complete-button";
-import {
-  formatDueDateTime,
-  formatRecurrence,
-  isOverdue,
-  startOfWeek,
-} from "./date-utils";
+import { PageHeader, StatTile, StatTileRow } from "@/components/ui";
+import { TaskBoard } from "./task-board";
+import { isOverdue, startOfWeek } from "./date-utils";
 
 type TaskRow = Task & {
   assignee: { display_name: string | null } | null;
 };
-
-function TaskGroup({
-  items,
-  canEdit,
-}: {
-  items: TaskRow[];
-  canEdit: (task: TaskRow) => boolean;
-}) {
-  if (!items.length) {
-    return <p className="text-sm text-neutral-500">Nothing here.</p>;
-  }
-
-  return (
-    <ul className="divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
-      {items.map((task) => {
-        const recurrence = formatRecurrence(
-          task.recurrence_unit,
-          task.recurrence_value,
-        );
-        const overdue = isOverdue(task.due_date, task.due_time);
-        const dueLabel = formatDueDateTime(task.due_date, task.due_time);
-
-        return (
-          <li
-            key={task.id}
-            className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
-          >
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium text-neutral-900">
-                  {task.title}
-                </span>
-                <Badge variant="accent">
-                  {task.points} pt{task.points === 1 ? "" : "s"}
-                </Badge>
-                {!task.points_approved && (
-                  <Badge variant="warning">Pending approval</Badge>
-                )}
-              </div>
-              <p className="mt-0.5 text-xs text-neutral-500">
-                {task.assignee?.display_name && (
-                  <span>Assigned to {task.assignee.display_name}</span>
-                )}
-                {recurrence && <span> · {recurrence}</span>}
-                {dueLabel && (
-                  <span className={overdue ? "text-red-600" : ""}>
-                    {" "}
-                    · Due {dueLabel}
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              {canEdit(task) && (
-                <Link
-                  href={`/house-tasks/${task.id}/edit`}
-                  className="text-sm text-neutral-500 underline hover:text-neutral-900"
-                >
-                  Edit
-                </Link>
-              )}
-              <CompleteButton taskId={task.id} />
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
 
 export default async function HouseTasksPage() {
   const { supabase, user, profile } = await requireUser();
@@ -112,6 +38,8 @@ export default async function HouseTasksPage() {
     !!profile?.is_admin ||
     !!profile?.is_house_tasks_admin;
 
+  const editableTaskIds = all.filter(canEdit).map((t) => t.id);
+
   return (
     <div>
       <PageHeader
@@ -133,19 +61,11 @@ export default async function HouseTasksPage() {
         <StatTile label="Overdue" value={overdueCount} />
       </StatTileRow>
 
-      <section className="mb-6">
-        <h2 className="mb-2 text-sm font-semibold text-neutral-700">
-          My tasks
-        </h2>
-        <TaskGroup items={myTasks} canEdit={canEdit} />
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-neutral-700">
-          Other tasks
-        </h2>
-        <TaskGroup items={otherTasks} canEdit={canEdit} />
-      </section>
+      <TaskBoard
+        myTasks={myTasks}
+        otherTasks={otherTasks}
+        editableTaskIds={editableTaskIds}
+      />
     </div>
   );
 }

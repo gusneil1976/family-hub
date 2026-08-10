@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireMiniBreaksAccess } from "@/lib/auth";
-import { uploadMiniBreakFile } from "./upload-file";
+import { uploadMiniBreakFile } from "../upload-file";
 
 type ActionState = { error: string } | undefined;
 

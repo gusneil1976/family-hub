@@ -18,8 +18,12 @@ function formatIngredient(item: ChecklistIngredient) {
 
 export function ShoppingChecklist({
   items,
+  readOnly,
+  readOnlyReason,
 }: {
   items: ChecklistIngredient[];
+  readOnly: boolean;
+  readOnlyReason?: string;
 }) {
   const [checkedMap, setCheckedMap] = useState<Record<string, boolean>>(
     Object.fromEntries(items.map((i) => [i.itemId, i.checked])),
@@ -27,6 +31,7 @@ export function ShoppingChecklist({
   const [, startTransition] = useTransition();
 
   function toggle(itemId: string, next: boolean) {
+    if (readOnly) return;
     setCheckedMap((prev) => ({ ...prev, [itemId]: next }));
     startTransition(() => {
       toggleChecklistItem(itemId, next);
@@ -44,7 +49,14 @@ export function ShoppingChecklist({
         <h2 className="mb-2 text-sm font-semibold text-neutral-700">
           Tick off what you already have
         </h2>
-        <ul className="divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
+        {readOnly && readOnlyReason && (
+          <p className="mb-2 text-xs text-neutral-500">{readOnlyReason}</p>
+        )}
+        <ul
+          className={`divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm ${
+            readOnly ? "opacity-50" : ""
+          }`}
+        >
           {items.map((item) => (
             <li
               key={item.itemId}
@@ -53,8 +65,9 @@ export function ShoppingChecklist({
               <input
                 type="checkbox"
                 checked={checkedMap[item.itemId] ?? false}
+                disabled={readOnly}
                 onChange={(e) => toggle(item.itemId, e.target.checked)}
-                className="h-5 w-5 shrink-0"
+                className="h-5 w-5 shrink-0 disabled:cursor-not-allowed"
               />
               <span
                 className={

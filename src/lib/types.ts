@@ -7,6 +7,7 @@ export type Profile = {
   has_spend_tracker_access: boolean;
   has_mini_breaks_access: boolean;
   has_baking_access: boolean;
+  has_shopping_list_access: boolean;
   created_at: string;
 };
 

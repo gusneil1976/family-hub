@@ -206,6 +206,30 @@ export async function setBakingAccess(userId: string, hasAccess: boolean) {
   revalidatePath("/admin/users");
 }
 
+// Grants/revokes rights to tick off shopping list items on the meal-vote
+// results page (see supabase/migrations/0026_shopping_list_access.sql).
+// Deliberately separate from is_admin — meant to stay limited to whoever's
+// actually doing the shopping/cooking, not every admin.
+export async function setShoppingListAccess(userId: string, hasAccess: boolean) {
+  const { user } = await requireAdmin();
+
+  if (userId === user.id) {
+    throw new Error("You can't change your own access.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({ has_shopping_list_access: hasAccess })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin/users");
+}
+
 // Permanently deletes the auth user (cascades to their profile row). Fails
 // with a foreign key error if they own meals, votes, or created cycles —
 // archive them instead in that case.

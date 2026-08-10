@@ -8,6 +8,7 @@ import { HouseTasksAdminToggle } from "./house-tasks-admin-toggle";
 import { InviteForm } from "./invite-form";
 import { MiniBreaksToggle } from "./mini-breaks-toggle";
 import { RemoveButton } from "./remove-button";
+import { ShoppingListToggle } from "./shopping-list-toggle";
 import { SpendTrackerToggle } from "./spend-tracker-toggle";
 
 export default async function ManageUsersPage() {
@@ -88,6 +89,11 @@ export default async function ManageUsersPage() {
                   Curing projects
                 </span>
               )}
+              {profile.has_shopping_list_access && (
+                <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
+                  Shopping list
+                </span>
+              )}
               {profile.id === currentUser.id && (
                 <span className="ml-2 text-neutral-400">(you)</span>
               )}
@@ -110,6 +116,10 @@ export default async function ManageUsersPage() {
                 <BakingToggle
                   userId={profile.id}
                   hasAccess={profile.has_baking_access}
+                />
+                <ShoppingListToggle
+                  userId={profile.id}
+                  hasAccess={profile.has_shopping_list_access}
                 />
                 <ArchiveToggle
                   userId={profile.id}

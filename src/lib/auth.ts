@@ -76,3 +76,14 @@ export async function requireBakingAccess() {
   }
   return result;
 }
+
+// Only gates the write path (ticking a shopping list item off) — the
+// results page itself stays visible to everyone, this is used inside the
+// toggleChecklistItem action, not as a page-level redirect.
+export async function requireShoppingListAccess() {
+  const result = await requireUser();
+  if (!result.profile?.has_shopping_list_access) {
+    redirect("/");
+  }
+  return result;
+}

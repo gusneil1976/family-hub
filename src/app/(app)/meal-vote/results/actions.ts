@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth";
+import { requireShoppingListAccess } from "@/lib/auth";
 
 export async function toggleChecklistItem(itemId: string, checked: boolean) {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireShoppingListAccess();
 
   const { error } = await supabase
     .from("shopping_checklist_items")

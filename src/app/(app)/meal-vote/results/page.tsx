@@ -11,6 +11,66 @@ type ShortlistRow = { meal_id: string; meals: Meal };
 const RANK_LABELS = ["1st", "2nd", "3rd"];
 const RANK_STYLES = ["bg-accent", "bg-neutral-500", "bg-amber-700"];
 
+function MealGrid({
+  entries,
+  points,
+  totalVotes,
+  dimmed,
+  rankOffset,
+}: {
+  entries: ShortlistRow[];
+  points: Map<string, number>;
+  totalVotes: number;
+  dimmed?: boolean;
+  rankOffset: number;
+}) {
+  return (
+    <div
+      className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${dimmed ? "opacity-60 grayscale" : ""}`}
+    >
+      {entries.map((entry, i) => {
+        const meal = entry.meals;
+        const pointTotal = points.get(entry.meal_id) ?? 0;
+        const globalRank = rankOffset + i;
+        return (
+          <Link
+            key={entry.meal_id}
+            href={`/meal-vote/meals/${meal.id}`}
+            className="relative block overflow-hidden rounded-xl border border-card-border bg-card shadow-sm transition-colors hover:border-accent"
+          >
+            {meal.image_url ? (
+              <MealImage
+                src={meal.image_url}
+                alt=""
+                className="h-44 w-full object-cover sm:h-48"
+              />
+            ) : (
+              <div className="flex h-44 w-full items-center justify-center bg-neutral-100 sm:h-48">
+                <UtensilsCrossed className="h-10 w-10 text-neutral-300" />
+              </div>
+            )}
+            {totalVotes > 0 && globalRank < 3 && (
+              <span
+                className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold text-white shadow ${RANK_STYLES[globalRank]}`}
+              >
+                {RANK_LABELS[globalRank]}
+              </span>
+            )}
+            <div className="px-4 py-3">
+              <p className="text-base font-medium text-neutral-900">
+                {meal.name}
+              </p>
+              <p className="mt-0.5 text-sm text-neutral-500">
+                {pointTotal} point{pointTotal === 1 ? "" : "s"}
+              </p>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 export default async function ResultsPage() {
   const { supabase, profile } = await requireUser();
 
@@ -60,31 +120,39 @@ export default async function ResultsPage() {
     .slice()
     .sort((a, b) => (points.get(b.meal_id) ?? 0) - (points.get(a.meal_id) ?? 0));
 
-  // A "winner" only exists once at least one vote has actually been cast —
-  // otherwise ranked[0] is just the first shortlist entry, not a leader.
-  const winnerEntry = totalVotes > 0 ? ranked[0] : undefined;
-  const winner = winnerEntry?.meals;
+  const topThree = totalVotes > 0 ? ranked.slice(0, 3) : ranked;
+  const rest = totalVotes > 0 ? ranked.slice(3) : [];
 
-  const { data: ingredients } = winner
+  // Cooking two dishes, so the shopping list covers whichever two meals are
+  // currently ranked highest — recomputed on every load, since standing can
+  // shift until voting closes.
+  const topTwo = totalVotes > 0 ? ranked.slice(0, 2) : [];
+  const topTwoMealIds = topTwo.map((e) => e.meal_id);
+
+  const { data: ingredients } = topTwoMealIds.length
     ? await supabase
         .from("ingredients")
         .select("*")
-        .eq("meal_id", winner.id)
+        .in("meal_id", topTwoMealIds)
         .order("sort_order")
         .returns<Ingredient[]>()
     : { data: null };
 
   let checklistItems: ChecklistIngredient[] = [];
 
-  if (profile?.is_admin && winner && ingredients?.length) {
-    await supabase.from("shopping_checklist_items").upsert(
-      ingredients.map((ing) => ({
-        voting_cycle_id: cycle.id,
-        ingredient_id: ing.id,
-        checked: false,
-      })),
-      { onConflict: "voting_cycle_id,ingredient_id", ignoreDuplicates: true },
-    );
+  if (ingredients?.length) {
+    // Only whoever has shopping-list access seeds new rows — everyone else
+    // can still read whatever's already there (RLS allows select for all).
+    if (profile?.has_shopping_list_access) {
+      await supabase.from("shopping_checklist_items").upsert(
+        ingredients.map((ing) => ({
+          voting_cycle_id: cycle.id,
+          ingredient_id: ing.id,
+          checked: false,
+        })),
+        { onConflict: "voting_cycle_id,ingredient_id", ignoreDuplicates: true },
+      );
+    }
 
     const { data: items } = await supabase
       .from("shopping_checklist_items")
@@ -105,6 +173,14 @@ export default async function ResultsPage() {
     });
   }
 
+  const canToggleChecklist =
+    !!profile?.has_shopping_list_access && cycle.status === "closed";
+  const checklistReadOnlyReason = !profile?.has_shopping_list_access
+    ? "Only specific family members can tick these off."
+    : cycle.status !== "closed"
+      ? "Unlocks once voting closes — the top 2 may still change until then."
+      : undefined;
+
   return (
     <div>
       <PageHeader
@@ -124,49 +200,42 @@ export default async function ResultsPage() {
         </p>
       ) : (
         <>
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {ranked.map((entry, i) => {
-              const meal = entry.meals;
-              const pointTotal = points.get(entry.meal_id) ?? 0;
-              return (
-                <Link
-                  key={entry.meal_id}
-                  href={`/meal-vote/meals/${meal.id}`}
-                  className="relative block overflow-hidden rounded-xl border border-card-border bg-card shadow-sm transition-colors hover:border-accent"
-                >
-                  {meal.image_url ? (
-                    <MealImage
-                      src={meal.image_url}
-                      alt=""
-                      className="h-44 w-full object-cover sm:h-48"
-                    />
-                  ) : (
-                    <div className="flex h-44 w-full items-center justify-center bg-neutral-100 sm:h-48">
-                      <UtensilsCrossed className="h-10 w-10 text-neutral-300" />
-                    </div>
-                  )}
-                  {totalVotes > 0 && i < 3 && (
-                    <span
-                      className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold text-white shadow ${RANK_STYLES[i]}`}
-                    >
-                      {RANK_LABELS[i]}
-                    </span>
-                  )}
-                  <div className="px-4 py-3">
-                    <p className="text-base font-medium text-neutral-900">
-                      {meal.name}
-                    </p>
-                    <p className="mt-0.5 text-sm text-neutral-500">
-                      {pointTotal} point{pointTotal === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          {totalVotes > 0 && (
+            <h2 className="mb-2 text-sm font-semibold text-neutral-700">
+              Top 3
+            </h2>
+          )}
+          <MealGrid
+            entries={topThree}
+            points={points}
+            totalVotes={totalVotes}
+            rankOffset={0}
+          />
 
-          {profile?.is_admin && checklistItems.length > 0 && (
-            <ShoppingChecklist items={checklistItems} />
+          {rest.length > 0 && (
+            <>
+              <hr className="my-6 border-neutral-200" />
+              <h2 className="mb-2 text-sm font-semibold text-neutral-700">
+                Not currently in the top 3
+              </h2>
+              <MealGrid
+                entries={rest}
+                points={points}
+                totalVotes={totalVotes}
+                rankOffset={3}
+                dimmed
+              />
+            </>
+          )}
+
+          {checklistItems.length > 0 && (
+            <div className="mt-6">
+              <ShoppingChecklist
+                items={checklistItems}
+                readOnly={!canToggleChecklist}
+                readOnlyReason={checklistReadOnlyReason}
+              />
+            </div>
           )}
         </>
       )}

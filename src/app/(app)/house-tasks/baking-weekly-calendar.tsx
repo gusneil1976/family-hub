@@ -80,6 +80,107 @@ function StepCard({ step }: { step: DueBakingStep }) {
   );
 }
 
+function BakingStepRow({ step }: { step: DueBakingStep }) {
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`font-medium text-neutral-900 ${
+              step.completed_at ? "italic line-through" : ""
+            }`}
+          >
+            {step.label}
+          </span>
+          {step.project?.name && (
+            <span className="text-xs text-neutral-500">
+              {step.project.name}
+            </span>
+          )}
+        </div>
+        <p className="mt-0.5 text-xs text-neutral-500">
+          Due {step.due_date}
+          {step.due_time && ` at ${step.due_time}`}
+        </p>
+      </div>
+      {!step.completed_at && step.recurrence_interval_value && step.project ? (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              const projectId = step.project!.id;
+              startTransition(() =>
+                toggleStepComplete(projectId, step.id, true),
+              );
+            }}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+          >
+            Complete
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              const projectId = step.project!.id;
+              startTransition(() => completeStepAndRepeat(projectId, step.id));
+            }}
+            className="rounded-md border border-blue-500 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+          >
+            Complete &amp; repeat
+          </button>
+        </div>
+      ) : (
+        <label className="flex items-center gap-2 text-neutral-700">
+          <input
+            type="checkbox"
+            checked={!!step.completed_at}
+            disabled={pending || !step.project}
+            onChange={(e) => {
+              if (!step.project) return;
+              const projectId = step.project.id;
+              startTransition(() =>
+                toggleStepComplete(projectId, step.id, e.target.checked),
+              );
+            }}
+            className="h-4 w-4"
+          />
+          Complete
+        </label>
+      )}
+    </li>
+  );
+}
+
+// List-view counterpart to BakingWeeklyCalendar below — same data, same
+// actions, just rows instead of a day grid. Only pending steps, matching
+// how the Tasks list only shows what's not yet done (completed steps stay
+// visible in the calendar view as a short-lived log, not here).
+export function BakingTaskList({ steps }: { steps: DueBakingStep[] }) {
+  const pending = steps
+    .filter((s) => !s.completed_at)
+    .slice()
+    .sort(
+      (a, b) =>
+        a.due_date.localeCompare(b.due_date) ||
+        (a.due_time ?? "").localeCompare(b.due_time ?? ""),
+    );
+
+  if (pending.length === 0) {
+    return <p className="text-sm text-neutral-500">Nothing here.</p>;
+  }
+
+  return (
+    <ul className="divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
+      {pending.map((step) => (
+        <BakingStepRow key={step.id} step={step} />
+      ))}
+    </ul>
+  );
+}
+
 // Separate from WeeklyCalendar/TaskCard in task-board.tsx — the data shape
 // differs (project name + weight, not points/assignee) and it's deliberately
 // styled with a blue accent instead of the pink House Tasks accent so it

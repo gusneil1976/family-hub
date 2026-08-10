@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import type { Profile, Task } from "@/lib/types";
 import { Badge } from "@/components/ui";
 import type { DueBakingStep } from "../curing/get-due-steps";
-import { BakingWeeklyCalendar } from "./baking-weekly-calendar";
+import { BakingTaskList, BakingWeeklyCalendar } from "./baking-weekly-calendar";
 import { CompleteButton } from "./complete-button";
 import {
   formatDueDateTime,
@@ -342,6 +342,15 @@ export function TaskBoard({
                 />
               </section>
             </>
+          )}
+
+          {bakingSteps && bakingSteps.length > 0 && (
+            <section className="mt-6">
+              <h2 className="mb-2 text-sm font-semibold text-neutral-700">
+                Curing Projects
+              </h2>
+              <BakingTaskList steps={bakingSteps} />
+            </section>
           )}
         </>
       ) : (

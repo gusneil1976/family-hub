@@ -19,8 +19,14 @@ type TaskRow = Task & {
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+// Local date components, not toISOString() — that's UTC, which in BST
+// (UTC+1) shifts local midnight back to the previous day and misaligns
+// every column by one.
 function dateKey(d: Date) {
-  return d.toISOString().slice(0, 10);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function TaskGroup({
@@ -227,7 +233,7 @@ export function TaskBoard({
   otherTasks: TaskRow[];
   editableTaskIds: string[];
 }) {
-  const [view, setView] = useState<"list" | "calendar">("list");
+  const [view, setView] = useState<"list" | "calendar">("calendar");
   const editableSet = useMemo(
     () => new Set(editableTaskIds),
     [editableTaskIds],

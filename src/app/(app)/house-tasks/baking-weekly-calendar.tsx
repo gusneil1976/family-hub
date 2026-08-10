@@ -18,7 +18,13 @@ function StepCard({ step }: { step: DueBakingStep }) {
 
   return (
     <div className="rounded-md border border-l-4 border-card-border border-l-blue-500 bg-card p-2 text-xs shadow-sm">
-      <span className="font-medium text-neutral-900">{step.label}</span>
+      <span
+        className={`font-medium text-neutral-900 ${
+          step.completed_at ? "italic line-through" : ""
+        }`}
+      >
+        {step.label}
+      </span>
       {step.project?.name && (
         <p className="mt-0.5 text-neutral-500">{step.project.name}</p>
       )}

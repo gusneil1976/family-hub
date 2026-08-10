@@ -8,6 +8,7 @@ export function DiyTaskForm({
   action,
   defaultValues,
   submitLabel,
+  projectOptions,
 }: {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
   defaultValues?: {
@@ -17,6 +18,7 @@ export function DiyTaskForm({
     hours_estimate?: number | null;
   };
   submitLabel: string;
+  projectOptions: string[];
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
 
@@ -49,10 +51,16 @@ export function DiyTaskForm({
           <input
             id="project"
             name="project"
+            list="project-options"
             placeholder="e.g. Kitchen"
             defaultValue={defaultValues?.project ?? ""}
             className="rounded-md border border-neutral-300 px-3 py-2 text-base focus:border-accent focus:outline-none"
           />
+          <datalist id="project-options">
+            {projectOptions.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
         </div>
 
         <div>

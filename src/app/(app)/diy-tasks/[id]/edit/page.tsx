@@ -28,6 +28,16 @@ export default async function EditDiyTaskPage({
     redirect("/diy-tasks");
   }
 
+  const { data: rows } = await supabase
+    .from("diy_tasks")
+    .select("project")
+    .not("project", "is", null)
+    .order("project");
+
+  const projectOptions = Array.from(
+    new Set((rows ?? []).map((r) => r.project).filter((p): p is string => !!p)),
+  );
+
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold text-foreground">
@@ -42,6 +52,7 @@ export default async function EditDiyTaskPage({
           hours_estimate: task.hours_estimate,
         }}
         submitLabel="Save changes"
+        projectOptions={projectOptions}
       />
       <div className="mt-6 border-t border-neutral-200 pt-4">
         <DeleteDiyTaskButton taskId={task.id} />

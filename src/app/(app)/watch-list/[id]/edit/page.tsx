@@ -23,7 +23,8 @@ export default async function EditWatchListItemPage({
     notFound();
   }
 
-  const canManage = item.submitted_by === user.id || !!profile?.is_admin;
+  const canManage =
+    item.submitted_by === user.id || !!profile?.is_admin || !!profile?.is_kiosk;
   if (!canManage) {
     redirect("/watch-list");
   }

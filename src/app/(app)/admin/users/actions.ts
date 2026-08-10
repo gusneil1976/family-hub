@@ -229,6 +229,30 @@ export async function setShoppingListAccess(userId: string, hasAccess: boolean) 
   revalidatePath("/admin/users");
 }
 
+// Marks an account as the shared kiosk login (e.g. a fridge browser tab
+// left permanently signed in) — see
+// supabase/migrations/0027_kiosk_mode.sql. Standard self-block: you
+// wouldn't kiosk-ify your own personal login.
+export async function setKioskMode(userId: string, isKiosk: boolean) {
+  const { user } = await requireAdmin();
+
+  if (userId === user.id) {
+    throw new Error("You can't change your own access.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({ is_kiosk: isKiosk })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin/users");
+}
+
 // Permanently deletes the auth user (cascades to their profile row). Fails
 // with a foreign key error if they own meals, votes, or created cycles —
 // archive them instead in that case.

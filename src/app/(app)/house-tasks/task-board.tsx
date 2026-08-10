@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Task } from "@/lib/types";
+import type { Profile, Task } from "@/lib/types";
 import { Badge } from "@/components/ui";
 import type { DueBakingStep } from "../curing/get-due-steps";
 import { BakingWeeklyCalendar } from "./baking-weekly-calendar";
@@ -35,9 +35,11 @@ function dateKey(d: Date) {
 function TaskGroup({
   items,
   editableTaskIds,
+  kioskProfiles,
 }: {
   items: TaskRow[];
   editableTaskIds: Set<string>;
+  kioskProfiles?: Profile[];
 }) {
   if (!items.length) {
     return <p className="text-sm text-neutral-500">Nothing here.</p>;
@@ -92,7 +94,7 @@ function TaskGroup({
                   Edit
                 </Link>
               )}
-              <CompleteButton taskId={task.id} />
+              <CompleteButton taskId={task.id} kioskProfiles={kioskProfiles} />
             </div>
           </li>
         );
@@ -104,9 +106,11 @@ function TaskGroup({
 function TaskCard({
   task,
   editable,
+  kioskProfiles,
 }: {
   task: TaskRow;
   editable: boolean;
+  kioskProfiles?: Profile[];
 }) {
   const overdue = isOverdue(task.due_date, task.due_time);
 
@@ -133,7 +137,7 @@ function TaskCard({
         ) : (
           <span />
         )}
-        <CompleteButton taskId={task.id} />
+        <CompleteButton taskId={task.id} kioskProfiles={kioskProfiles} />
       </div>
     </div>
   );
@@ -145,12 +149,14 @@ function WeeklyCalendar({
   editableTaskIds,
   days,
   todayKey,
+  kioskProfiles,
 }: {
   label: string;
   tasks: TaskRow[];
   editableTaskIds: Set<string>;
   days: Date[];
   todayKey: string;
+  kioskProfiles?: Profile[];
 }) {
   const byDay = useMemo(() => {
     const map = new Map<string, TaskRow[]>();
@@ -199,6 +205,7 @@ function WeeklyCalendar({
                         key={task.id}
                         task={task}
                         editable={editableTaskIds.has(task.id)}
+                        kioskProfiles={kioskProfiles}
                       />
                     ))
                   )}
@@ -214,7 +221,11 @@ function WeeklyCalendar({
           <h2 className="mb-2 text-sm font-semibold text-neutral-700">
             No due date
           </h2>
-          <TaskGroup items={undated} editableTaskIds={editableTaskIds} />
+          <TaskGroup
+            items={undated}
+            editableTaskIds={editableTaskIds}
+            kioskProfiles={kioskProfiles}
+          />
         </div>
       )}
     </div>
@@ -226,11 +237,13 @@ export function TaskBoard({
   otherTasks,
   editableTaskIds,
   bakingSteps,
+  kioskProfiles,
 }: {
   myTasks: TaskRow[];
   otherTasks: TaskRow[];
   editableTaskIds: string[];
   bakingSteps?: DueBakingStep[];
+  kioskProfiles?: Profile[];
 }) {
   const [view, setView] = useState<"list" | "calendar">("calendar");
   const [weekOffset, setWeekOffset] = useState(0);
@@ -287,14 +300,22 @@ export function TaskBoard({
             <h2 className="mb-2 text-sm font-semibold text-neutral-700">
               My tasks
             </h2>
-            <TaskGroup items={myTasks} editableTaskIds={editableSet} />
+            <TaskGroup
+              items={myTasks}
+              editableTaskIds={editableSet}
+              kioskProfiles={kioskProfiles}
+            />
           </section>
 
           <section>
             <h2 className="mb-2 text-sm font-semibold text-neutral-700">
               Other tasks
             </h2>
-            <TaskGroup items={otherTasks} editableTaskIds={editableSet} />
+            <TaskGroup
+              items={otherTasks}
+              editableTaskIds={editableSet}
+              kioskProfiles={kioskProfiles}
+            />
           </section>
         </>
       ) : (
@@ -335,6 +356,7 @@ export function TaskBoard({
             editableTaskIds={editableSet}
             days={days}
             todayKey={todayKey}
+            kioskProfiles={kioskProfiles}
           />
           <WeeklyCalendar
             label="Other tasks"
@@ -342,6 +364,7 @@ export function TaskBoard({
             editableTaskIds={editableSet}
             days={days}
             todayKey={todayKey}
+            kioskProfiles={kioskProfiles}
           />
           {bakingSteps && bakingSteps.length > 0 && (
             <BakingWeeklyCalendar

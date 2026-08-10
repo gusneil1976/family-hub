@@ -10,9 +10,11 @@ type ActionState = { error: string } | undefined;
 function canManage(
   item: Pick<WatchListItem, "submitted_by">,
   userId: string,
-  profile: { is_admin: boolean } | null,
+  profile: { is_admin: boolean; is_kiosk: boolean } | null,
 ) {
-  return item.submitted_by === userId || !!profile?.is_admin;
+  return (
+    item.submitted_by === userId || !!profile?.is_admin || !!profile?.is_kiosk
+  );
 }
 
 export async function updateWatchListItem(

@@ -9,7 +9,13 @@ export async function createDiyTask(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user, profile } = await requireUser();
+
+  const performedBy = String(formData.get("performed_by") ?? "").trim();
+  const createdBy = profile?.is_kiosk && performedBy ? performedBy : user.id;
+  if (profile?.is_kiosk && !performedBy) {
+    return { error: "Please select who's creating this." };
+  }
 
   const title = String(formData.get("title") ?? "").trim();
   if (!title) {
@@ -30,7 +36,7 @@ export async function createDiyTask(
     project,
     notes,
     hours_estimate: hoursEstimate,
-    created_by: user.id,
+    created_by: createdBy,
   });
 
   if (error) {

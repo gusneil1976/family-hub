@@ -10,12 +10,17 @@ type ActionState = { error: string } | undefined;
 function canManage(
   task: Pick<Task, "created_by">,
   userId: string,
-  profile: { is_admin: boolean; is_house_tasks_admin: boolean } | null,
+  profile: {
+    is_admin: boolean;
+    is_house_tasks_admin: boolean;
+    is_kiosk: boolean;
+  } | null,
 ) {
   return (
     task.created_by === userId ||
     !!profile?.is_admin ||
-    !!profile?.is_house_tasks_admin
+    !!profile?.is_house_tasks_admin ||
+    !!profile?.is_kiosk
   );
 }
 

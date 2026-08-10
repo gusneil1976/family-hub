@@ -190,6 +190,7 @@ export function Sidebar({
   hasSpendTrackerAccess,
   hasMiniBreaksAccess,
   hasBakingAccess,
+  isKiosk,
 }: {
   email: string | null;
   isAdmin: boolean;
@@ -197,6 +198,7 @@ export function Sidebar({
   hasSpendTrackerAccess: boolean;
   hasMiniBreaksAccess: boolean;
   hasBakingAccess: boolean;
+  isKiosk: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -390,12 +392,14 @@ export function Sidebar({
             label="Appearance"
           />
         )}
-        <SidebarLink
-          href="/account"
-          active={pathname === "/account"}
-          icon={User}
-          label="Account"
-        />
+        {!isKiosk && (
+          <SidebarLink
+            href="/account"
+            active={pathname === "/account"}
+            icon={User}
+            label="Account"
+          />
+        )}
         {email && (
           <p className="truncate px-2 py-1 text-xs text-sidebar-muted">
             {email}

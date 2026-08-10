@@ -8,6 +8,7 @@ export type Profile = {
   has_mini_breaks_access: boolean;
   has_baking_access: boolean;
   has_shopping_list_access: boolean;
+  is_kiosk: boolean;
   created_at: string;
 };
 

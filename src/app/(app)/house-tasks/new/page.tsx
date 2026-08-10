@@ -4,12 +4,13 @@ import { TaskForm } from "../task-form";
 import { createTask } from "./actions";
 
 export default async function NewTaskPage() {
-  const { supabase, user } = await requireUser();
+  const { supabase, user, profile } = await requireUser();
 
   const { data: profiles } = await supabase
     .from("profiles")
     .select("*")
     .eq("is_archived", false)
+    .eq("is_kiosk", false)
     .order("display_name")
     .returns<Profile[]>();
 
@@ -23,6 +24,7 @@ export default async function NewTaskPage() {
         profiles={profiles ?? []}
         currentUserId={user.id}
         submitLabel="Create task"
+        isKiosk={!!profile?.is_kiosk}
       />
     </div>
   );

@@ -109,7 +109,7 @@ export default async function DiyTasksPage() {
 
   const all = tasks ?? [];
   const canManage = (task: DiyTask) =>
-    task.created_by === user.id || !!profile?.is_admin;
+    task.created_by === user.id || !!profile?.is_admin || !!profile?.is_kiosk;
 
   const active = all.filter((t) => !t.completed_at);
   const completed = all

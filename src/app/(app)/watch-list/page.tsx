@@ -84,7 +84,7 @@ export default async function WatchListPage() {
 
   const all = items ?? [];
   const canManage = (item: ItemRow) =>
-    item.submitted_by === user.id || !!profile?.is_admin;
+    item.submitted_by === user.id || !!profile?.is_admin || !!profile?.is_kiosk;
   // Watching items float to the top of their section; stable sort keeps
   // the existing created_at-desc order within each group.
   const active = all

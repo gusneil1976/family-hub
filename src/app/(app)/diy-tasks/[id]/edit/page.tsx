@@ -23,7 +23,8 @@ export default async function EditDiyTaskPage({
     notFound();
   }
 
-  const canManage = task.created_by === user.id || !!profile?.is_admin;
+  const canManage =
+    task.created_by === user.id || !!profile?.is_admin || !!profile?.is_kiosk;
   if (!canManage) {
     redirect("/diy-tasks");
   }

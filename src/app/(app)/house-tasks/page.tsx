@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import type { Task } from "@/lib/types";
+import type { Profile, Task } from "@/lib/types";
 import { PageHeader, StatTile, StatTileRow } from "@/components/ui";
 import { getUpcomingBakingSteps } from "../curing/get-due-steps";
 import { TaskBoard } from "./task-board";
@@ -54,9 +54,22 @@ export default async function HouseTasksPage() {
   const canEdit = (task: TaskRow) =>
     task.created_by === user.id ||
     !!profile?.is_admin ||
-    !!profile?.is_house_tasks_admin;
+    !!profile?.is_house_tasks_admin ||
+    !!profile?.is_kiosk;
 
   const editableTaskIds = all.filter(canEdit).map((t) => t.id);
+
+  // Kiosk has no personal identity to credit points to automatically, so
+  // completing a task there asks who actually did it.
+  const { data: kioskProfiles } = profile?.is_kiosk
+    ? await supabase
+        .from("profiles")
+        .select("*")
+        .eq("is_archived", false)
+        .eq("is_kiosk", false)
+        .order("display_name")
+        .returns<Profile[]>()
+    : { data: null };
 
   return (
     <div>
@@ -84,6 +97,7 @@ export default async function HouseTasksPage() {
         otherTasks={otherTasks}
         editableTaskIds={editableTaskIds}
         bakingSteps={bakingSteps}
+        kioskProfiles={kioskProfiles ?? undefined}
       />
     </div>
   );

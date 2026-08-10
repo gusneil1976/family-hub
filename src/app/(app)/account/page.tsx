@@ -1,9 +1,16 @@
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { DisplayNameForm } from "./display-name-form";
 import { SetPasswordForm } from "./set-password-form";
 
 export default async function AccountPage() {
   const { profile } = await requireUser();
+
+  // Kiosk is a shared login, not a personal one — no per-person account
+  // settings to manage from it.
+  if (profile?.is_kiosk) {
+    redirect("/");
+  }
 
   return (
     <div>

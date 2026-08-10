@@ -2,7 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { ChevronDown, ChevronUp, UtensilsCrossed, X } from "lucide-react";
-import type { Meal } from "@/lib/types";
+import type { Meal, Profile } from "@/lib/types";
+import { WhoPicker } from "@/components/who-picker";
 import { MealImage } from "../meals/meal-image";
 
 type ActionState = { error: string } | undefined;
@@ -14,10 +15,12 @@ export function VoteForm({
   meals,
   initialSelected,
   action,
+  kioskProfiles,
 }: {
   meals: Meal[];
   initialSelected: string[];
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
+  kioskProfiles?: Profile[];
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [selected, setSelected] = useState<string[]>(initialSelected);
@@ -45,6 +48,12 @@ export function VoteForm({
 
   return (
     <form action={formAction}>
+      {kioskProfiles && (
+        <div className="mb-6">
+          <WhoPicker profiles={kioskProfiles} label="Who's voting?" />
+        </div>
+      )}
+
       {selected.map((id) => (
         <input key={id} type="hidden" name="meal_id" value={id} />
       ))}

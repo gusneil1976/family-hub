@@ -27,7 +27,8 @@ export default async function EditTaskPage({
   const canEdit =
     task.created_by === user.id ||
     profile?.is_admin ||
-    profile?.is_house_tasks_admin;
+    profile?.is_house_tasks_admin ||
+    profile?.is_kiosk;
   if (!canEdit) {
     redirect("/house-tasks");
   }
@@ -36,6 +37,7 @@ export default async function EditTaskPage({
     .from("profiles")
     .select("*")
     .eq("is_archived", false)
+    .eq("is_kiosk", false)
     .order("display_name")
     .returns<Profile[]>();
 

@@ -6,6 +6,7 @@ import { BakingToggle } from "./baking-toggle";
 import { CreateUserForm } from "./create-user-form";
 import { HouseTasksAdminToggle } from "./house-tasks-admin-toggle";
 import { InviteForm } from "./invite-form";
+import { KioskToggle } from "./kiosk-toggle";
 import { MiniBreaksToggle } from "./mini-breaks-toggle";
 import { RemoveButton } from "./remove-button";
 import { ShoppingListToggle } from "./shopping-list-toggle";
@@ -94,6 +95,11 @@ export default async function ManageUsersPage() {
                   Shopping list
                 </span>
               )}
+              {profile.is_kiosk && (
+                <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  Kiosk
+                </span>
+              )}
               {profile.id === currentUser.id && (
                 <span className="ml-2 text-neutral-400">(you)</span>
               )}
@@ -118,6 +124,7 @@ export default async function ManageUsersPage() {
                     userId={profile.id}
                     hasAccess={profile.has_baking_access}
                   />
+                  <KioskToggle userId={profile.id} isKiosk={profile.is_kiosk} />
                 </>
               )}
               <ShoppingListToggle

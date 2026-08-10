@@ -10,7 +10,13 @@ export async function submitVotes(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user, profile } = await requireUser();
+
+  const performedBy = String(formData.get("performed_by") ?? "").trim();
+  const voterId = profile?.is_kiosk && performedBy ? performedBy : user.id;
+  if (profile?.is_kiosk && !performedBy) {
+    return { error: "Please select who's voting." };
+  }
 
   const mealIds = formData.getAll("meal_id").map(String);
   if (mealIds.length === 0) {
@@ -24,7 +30,7 @@ export async function submitVotes(
     .from("votes")
     .delete()
     .eq("voting_cycle_id", cycleId)
-    .eq("voter_id", user.id);
+    .eq("voter_id", voterId);
   if (deleteError) {
     return { error: deleteError.message };
   }
@@ -32,7 +38,7 @@ export async function submitVotes(
   const { error: insertError } = await supabase.from("votes").insert(
     mealIds.map((meal_id, i) => ({
       voting_cycle_id: cycleId,
-      voter_id: user.id,
+      voter_id: voterId,
       meal_id,
       rank: i + 1,
     })),

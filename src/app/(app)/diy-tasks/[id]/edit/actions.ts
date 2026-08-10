@@ -10,9 +10,11 @@ type ActionState = { error: string } | undefined;
 function canManage(
   task: Pick<DiyTask, "created_by">,
   userId: string,
-  profile: { is_admin: boolean } | null,
+  profile: { is_admin: boolean; is_kiosk: boolean } | null,
 ) {
-  return task.created_by === userId || !!profile?.is_admin;
+  return (
+    task.created_by === userId || !!profile?.is_admin || !!profile?.is_kiosk
+  );
 }
 
 export async function updateDiyTask(

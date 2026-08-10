@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import type { WatchCategory } from "@/lib/types";
+import type { Profile, WatchCategory } from "@/lib/types";
+import { WhoPicker } from "@/components/who-picker";
 
 type ActionState = { error: string } | undefined;
 
@@ -10,6 +11,7 @@ export function WatchItemForm({
   platformOptions,
   defaultValues,
   submitLabel,
+  kioskProfiles,
 }: {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
   platformOptions: string[];
@@ -19,11 +21,16 @@ export function WatchItemForm({
     platform?: string;
   };
   submitLabel: string;
+  kioskProfiles?: Profile[];
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
 
   return (
     <form action={formAction} className="space-y-6">
+      {kioskProfiles && !defaultValues && (
+        <WhoPicker profiles={kioskProfiles} label="Who's suggesting this?" />
+      )}
+
       <div>
         <label
           htmlFor="title"

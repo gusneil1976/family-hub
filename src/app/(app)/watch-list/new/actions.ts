@@ -10,7 +10,13 @@ export async function createWatchListItem(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user, profile } = await requireUser();
+
+  const performedBy = String(formData.get("performed_by") ?? "").trim();
+  const submittedBy = profile?.is_kiosk && performedBy ? performedBy : user.id;
+  if (profile?.is_kiosk && !performedBy) {
+    return { error: "Please select who's suggesting this." };
+  }
 
   const title = String(formData.get("title") ?? "").trim();
   if (!title) {
@@ -33,7 +39,7 @@ export async function createWatchListItem(
     title,
     category,
     platform,
-    submitted_by: user.id,
+    submitted_by: submittedBy,
   });
 
   if (error) {

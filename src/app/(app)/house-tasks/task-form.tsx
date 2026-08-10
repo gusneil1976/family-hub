@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import type { Profile, RecurrenceUnit, Task } from "@/lib/types";
+import { WhoPicker } from "@/components/who-picker";
 import { normalizeTime } from "./date-utils";
 
 export type TaskFormState = { error: string } | undefined;
@@ -22,6 +23,7 @@ export function TaskForm({
   currentUserId,
   task,
   submitLabel,
+  isKiosk,
 }: {
   action: (
     state: TaskFormState,
@@ -31,6 +33,7 @@ export function TaskForm({
   currentUserId: string;
   task?: Task;
   submitLabel: string;
+  isKiosk?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [mode, setMode] = useState<Mode>(
@@ -61,6 +64,10 @@ export function TaskForm({
 
   return (
     <form action={formAction} className="space-y-6">
+      {isKiosk && !task && (
+        <WhoPicker profiles={profiles} label="Who's creating this?" />
+      )}
+
       <div>
         <label
           htmlFor="title"

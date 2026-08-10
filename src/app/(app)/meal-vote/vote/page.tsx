@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import type { Meal, VotingCycle } from "@/lib/types";
+import type { Meal, Profile, VotingCycle } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
 import { submitVotes } from "./actions";
 import { VoteForm } from "./vote-form";
@@ -7,7 +7,7 @@ import { VoteForm } from "./vote-form";
 type ShortlistRow = { meal_id: string; meals: Meal };
 
 export default async function VotePage() {
-  const { supabase, user } = await requireUser();
+  const { supabase, user, profile } = await requireUser();
 
   const { data: cycle } = await supabase
     .from("voting_cycles")
@@ -35,12 +35,27 @@ export default async function VotePage() {
     .eq("voting_cycle_id", cycle.id)
     .returns<ShortlistRow[]>();
 
-  const { data: myVotes } = await supabase
-    .from("votes")
-    .select("meal_id, rank")
-    .eq("voting_cycle_id", cycle.id)
-    .eq("voter_id", user.id)
-    .order("rank", { ascending: true });
+  // Kiosk has no "my votes" of its own — whoever's picked in the WhoPicker
+  // just starts from a blank ranking each time, rather than trying to
+  // preload a per-person selection client-side.
+  const { data: myVotes } = profile?.is_kiosk
+    ? { data: null }
+    : await supabase
+        .from("votes")
+        .select("meal_id, rank")
+        .eq("voting_cycle_id", cycle.id)
+        .eq("voter_id", user.id)
+        .order("rank", { ascending: true });
+
+  const { data: kioskProfiles } = profile?.is_kiosk
+    ? await supabase
+        .from("profiles")
+        .select("*")
+        .eq("is_archived", false)
+        .eq("is_kiosk", false)
+        .order("display_name")
+        .returns<Profile[]>()
+    : { data: null };
 
   const meals = (shortlist ?? []).map((s) => s.meals);
   const initialSelected = (myVotes ?? []).map((v) => v.meal_id);
@@ -55,6 +70,7 @@ export default async function VotePage() {
         meals={meals}
         initialSelected={initialSelected}
         action={submitVotes.bind(null, cycle.id)}
+        kioskProfiles={kioskProfiles ?? undefined}
       />
     </div>
   );

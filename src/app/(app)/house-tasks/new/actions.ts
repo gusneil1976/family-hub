@@ -10,7 +10,13 @@ export async function createTask(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user, profile } = await requireUser();
+
+  const performedBy = String(formData.get("performed_by") ?? "").trim();
+  const createdBy = profile?.is_kiosk && performedBy ? performedBy : user.id;
+  if (profile?.is_kiosk && !performedBy) {
+    return { error: "Please select who's creating this." };
+  }
 
   const title = String(formData.get("title") ?? "").trim();
   if (!title) {
@@ -23,7 +29,7 @@ export async function createTask(
   }
 
   const assignedTo =
-    String(formData.get("assigned_to") ?? "").trim() || user.id;
+    String(formData.get("assigned_to") ?? "").trim() || createdBy;
   const dueDate = String(formData.get("due_date") ?? "").trim() || null;
   const dueTime = String(formData.get("due_time") ?? "").trim() || null;
   const description =
@@ -44,7 +50,7 @@ export async function createTask(
     title,
     description,
     points,
-    created_by: user.id,
+    created_by: createdBy,
     assigned_to: assignedTo,
     due_date: dueDate,
     due_time: dueTime,

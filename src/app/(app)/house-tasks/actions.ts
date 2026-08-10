@@ -8,9 +8,12 @@ import { addInterval, toDateInputValue } from "./date-utils";
 // Anyone can complete anyone's task — the completer earns the points, not
 // necessarily the assignee. One-off tasks are marked done permanently;
 // recurring tasks log the completion, then reset to pending (advancing the
-// due date if one was set) for the next cycle.
-export async function completeTask(taskId: string) {
-  const { supabase, user } = await requireUser();
+// due date if one was set) for the next cycle. On kiosk, performedBy names
+// who actually did it (the shared kiosk login has no points of its own);
+// only honored when the caller's own profile is actually kiosk.
+export async function completeTask(taskId: string, performedBy?: string) {
+  const { supabase, user, profile } = await requireUser();
+  const completedBy = profile?.is_kiosk && performedBy ? performedBy : user.id;
 
   const { data: task, error: fetchError } = await supabase
     .from("tasks")
@@ -24,7 +27,7 @@ export async function completeTask(taskId: string) {
 
   const { error: insertError } = await supabase
     .from("task_completions")
-    .insert({ task_id: task.id, completed_by: user.id, points: task.points });
+    .insert({ task_id: task.id, completed_by: completedBy, points: task.points });
   if (insertError) {
     throw new Error(insertError.message);
   }

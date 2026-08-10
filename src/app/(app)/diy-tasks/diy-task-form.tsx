@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
+import type { Profile } from "@/lib/types";
+import { WhoPicker } from "@/components/who-picker";
 
 type ActionState = { error: string } | undefined;
 
@@ -9,6 +11,7 @@ export function DiyTaskForm({
   defaultValues,
   submitLabel,
   projectOptions,
+  kioskProfiles,
 }: {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
   defaultValues?: {
@@ -19,11 +22,16 @@ export function DiyTaskForm({
   };
   submitLabel: string;
   projectOptions: string[];
+  kioskProfiles?: Profile[];
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
 
   return (
     <form action={formAction} className="space-y-6">
+      {kioskProfiles && !defaultValues && (
+        <WhoPicker profiles={kioskProfiles} label="Who's creating this?" />
+      )}
+
       <div>
         <label
           htmlFor="title"

@@ -209,13 +209,12 @@ export async function setBakingAccess(userId: string, hasAccess: boolean) {
 // Grants/revokes rights to tick off shopping list items on the meal-vote
 // results page (see supabase/migrations/0026_shopping_list_access.sql).
 // Deliberately separate from is_admin — meant to stay limited to whoever's
-// actually doing the shopping/cooking, not every admin.
+// actually doing the shopping/cooking, not every admin. Unlike the other
+// toggles here, self-granting is allowed: this isn't an elevated-privilege
+// flag, just "can tick a checkbox," so an admin shouldn't have to get a
+// second person to grant it to themselves.
 export async function setShoppingListAccess(userId: string, hasAccess: boolean) {
-  const { user } = await requireAdmin();
-
-  if (userId === user.id) {
-    throw new Error("You can't change your own access.");
-  }
+  await requireAdmin();
 
   const admin = createAdminClient();
   const { error } = await admin

@@ -98,36 +98,42 @@ export default async function ManageUsersPage() {
                 <span className="ml-2 text-neutral-400">(you)</span>
               )}
             </span>
-            {profile.id !== currentUser.id && (
-              <div className="flex flex-wrap items-center gap-3">
-                <AdminToggle userId={profile.id} isAdmin={profile.is_admin} />
-                <HouseTasksAdminToggle
-                  userId={profile.id}
-                  isAdmin={profile.is_house_tasks_admin}
-                />
-                <SpendTrackerToggle
-                  userId={profile.id}
-                  hasAccess={profile.has_spend_tracker_access}
-                />
-                <MiniBreaksToggle
-                  userId={profile.id}
-                  hasAccess={profile.has_mini_breaks_access}
-                />
-                <BakingToggle
-                  userId={profile.id}
-                  hasAccess={profile.has_baking_access}
-                />
-                <ShoppingListToggle
-                  userId={profile.id}
-                  hasAccess={profile.has_shopping_list_access}
-                />
-                <ArchiveToggle
-                  userId={profile.id}
-                  isArchived={profile.is_archived}
-                />
-                <RemoveButton userId={profile.id} />
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-3">
+              {profile.id !== currentUser.id && (
+                <>
+                  <AdminToggle userId={profile.id} isAdmin={profile.is_admin} />
+                  <HouseTasksAdminToggle
+                    userId={profile.id}
+                    isAdmin={profile.is_house_tasks_admin}
+                  />
+                  <SpendTrackerToggle
+                    userId={profile.id}
+                    hasAccess={profile.has_spend_tracker_access}
+                  />
+                  <MiniBreaksToggle
+                    userId={profile.id}
+                    hasAccess={profile.has_mini_breaks_access}
+                  />
+                  <BakingToggle
+                    userId={profile.id}
+                    hasAccess={profile.has_baking_access}
+                  />
+                </>
+              )}
+              <ShoppingListToggle
+                userId={profile.id}
+                hasAccess={profile.has_shopping_list_access}
+              />
+              {profile.id !== currentUser.id && (
+                <>
+                  <ArchiveToggle
+                    userId={profile.id}
+                    isArchived={profile.is_archived}
+                  />
+                  <RemoveButton userId={profile.id} />
+                </>
+              )}
+            </div>
           </li>
         ))}
       </ul>

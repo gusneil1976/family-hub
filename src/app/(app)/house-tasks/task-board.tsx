@@ -256,12 +256,19 @@ export function TaskBoard({
 }) {
   const [view, setView] = useState<"list" | "calendar">("calendar");
   const [weekOffset, setWeekOffset] = useState(0);
+  // List-view-only, deliberately not persisted anywhere — a plain filter on
+  // what's already loaded, reset on refresh/navigation by design.
+  const [todayOnly, setTodayOnly] = useState(false);
   const editableSet = useMemo(
     () => new Set(editableTaskIds),
     [editableTaskIds],
   );
 
   const todayKey = useMemo(() => dateKey(new Date()), []);
+  const filterToday = (items: TaskRow[]) =>
+    todayOnly ? items.filter((t) => t.due_date === todayKey) : items;
+  const filterBakingToday = (steps: DueBakingStep[]) =>
+    todayOnly ? steps.filter((s) => s.due_date === todayKey) : steps;
   const weekStart = useMemo(() => {
     const d = startOfWeek(new Date());
     d.setDate(d.getDate() + weekOffset * 7);
@@ -286,7 +293,7 @@ export function TaskBoard({
 
   return (
     <div>
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         {(["list", "calendar"] as const).map((v) => (
           <button
             key={v}
@@ -301,6 +308,19 @@ export function TaskBoard({
             {v === "list" ? "List" : "Calendar"}
           </button>
         ))}
+        {view === "list" && (
+          <button
+            type="button"
+            onClick={() => setTodayOnly((v) => !v)}
+            className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
+              todayOnly
+                ? "border-accent bg-accent text-accent-foreground"
+                : "border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+            }`}
+          >
+            {todayOnly ? "Showing today only" : "Show today only"}
+          </button>
+        )}
       </div>
 
       {view === "list" ? (
@@ -312,7 +332,7 @@ export function TaskBoard({
                   {person.display_name}
                 </h2>
                 <TaskGroup
-                  items={tasks}
+                  items={filterToday(tasks)}
                   editableTaskIds={editableSet}
                   kioskProfiles={kioskProfiles}
                 />
@@ -325,7 +345,7 @@ export function TaskBoard({
                   My tasks
                 </h2>
                 <TaskGroup
-                  items={myTasks}
+                  items={filterToday(myTasks)}
                   editableTaskIds={editableSet}
                   kioskProfiles={kioskProfiles}
                 />
@@ -336,7 +356,7 @@ export function TaskBoard({
                   Other tasks
                 </h2>
                 <TaskGroup
-                  items={otherTasks}
+                  items={filterToday(otherTasks)}
                   editableTaskIds={editableSet}
                   kioskProfiles={kioskProfiles}
                 />
@@ -349,7 +369,7 @@ export function TaskBoard({
               <h2 className="mb-2 text-sm font-semibold text-neutral-700">
                 Curing Projects
               </h2>
-              <BakingTaskList steps={bakingSteps} />
+              <BakingTaskList steps={filterBakingToday(bakingSteps)} />
             </section>
           )}
         </>

@@ -12,6 +12,7 @@ import {
   ListChecks,
   LogOut,
   Menu,
+  Monitor,
   Palette,
   Plane,
   ShieldCheck,
@@ -25,7 +26,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { signOut } from "./actions";
+import { signOut, startKioskPreview } from "./actions";
 import {
   exact,
   HOUSE_TASKS_NAV,
@@ -348,6 +349,17 @@ export function Sidebar({
             icon={Palette}
             label="Appearance"
           />
+        )}
+        {isAdmin && (
+          <form action={startKioskPreview}>
+            <button
+              type="submit"
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-white/10"
+            >
+              <Monitor className="h-4 w-4" />
+              Preview kiosk view
+            </button>
+          </form>
         )}
         <SidebarLink
           href="/account"

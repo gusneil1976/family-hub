@@ -1,8 +1,11 @@
 import "server-only";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
+
+export const KIOSK_PREVIEW_COOKIE = "kiosk_preview";
 
 // Centralizes "who is the current user, and are they admin". Server
 // Components/Actions use this for UX (hiding admin-only buttons, redirecting
@@ -28,7 +31,18 @@ export async function requireUser() {
     redirect("/login");
   }
 
-  return { supabase, user, profile };
+  // Lets an admin see the kiosk UI without logging out and back in as the
+  // shared kiosk account — a rendering-only override. Every action still
+  // runs under the admin's own auth.uid(), so RLS (the real enforcement
+  // boundary) rejects anything that would actually require being kiosk,
+  // e.g. attributing a vote to someone else.
+  const cookieStore = await cookies();
+  const isPreviewingKiosk =
+    cookieStore.get(KIOSK_PREVIEW_COOKIE)?.value === "1" && !!profile?.is_admin;
+  const effectiveProfile: Profile | null =
+    isPreviewingKiosk && profile ? { ...profile, is_kiosk: true } : profile;
+
+  return { supabase, user, profile: effectiveProfile, isPreviewingKiosk };
 }
 
 export async function requireAdmin() {

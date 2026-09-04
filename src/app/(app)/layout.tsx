@@ -7,12 +7,12 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, profile } = await requireUser();
+  const { user, profile, isPreviewingKiosk } = await requireUser();
 
   if (profile?.is_kiosk) {
     return (
       <div className="flex min-h-screen flex-col">
-        <KioskNav />
+        <KioskNav isPreviewingKiosk={isPreviewingKiosk} />
         <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
           <div className="mx-auto max-w-5xl">{children}</div>
         </main>

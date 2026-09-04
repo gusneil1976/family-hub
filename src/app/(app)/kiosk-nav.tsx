@@ -10,7 +10,7 @@ import {
   UtensilsCrossed,
   Wrench,
 } from "lucide-react";
-import { signOut } from "./actions";
+import { signOut, stopKioskPreview } from "./actions";
 import { HOUSE_TASKS_NAV, MEAL_VOTE_NAV, type IconType, type NavItem } from "./nav-items";
 
 const APPS: { label: string; href: string; icon: IconType; match: (p: string) => boolean }[] = [
@@ -96,7 +96,7 @@ function SubTab({
 // touch-first (big tiles, no hamburger/collapse) since this runs on a
 // fridge touchscreen. Row 1 is always the same 4 apps; row 2 is a
 // "sub-selectable" tab strip for whichever app (if any) has sub-pages.
-export function KioskNav() {
+export function KioskNav({ isPreviewingKiosk }: { isPreviewingKiosk?: boolean }) {
   const pathname = usePathname();
 
   const subNav: NavItem[] = pathname.startsWith("/meal-vote")
@@ -107,6 +107,21 @@ export function KioskNav() {
 
   return (
     <div className="bg-sidebar text-sidebar-foreground print:hidden">
+      {isPreviewingKiosk && (
+        <div className="flex items-center justify-between gap-3 bg-amber-400 px-4 py-2 text-amber-950">
+          <span className="text-sm font-semibold">
+            Previewing the kiosk view — nobody else sees this
+          </span>
+          <form action={stopKioskPreview}>
+            <button
+              type="submit"
+              className="rounded-md bg-amber-950 px-3 py-1.5 text-sm font-medium text-amber-50 hover:bg-amber-900"
+            >
+              Exit preview
+            </button>
+          </form>
+        </div>
+      )}
       <div className="flex items-center justify-between px-4 pt-3">
         <Link
           href="/"

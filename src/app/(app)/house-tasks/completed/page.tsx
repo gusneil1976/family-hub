@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { Badge, PageHeader } from "@/components/ui";
 import { startOfMonth, startOfWeek } from "../date-utils";
+import { UncompleteButton } from "./uncomplete-button";
 
 type CompletionRow = {
   id: string;
@@ -39,7 +40,10 @@ function CompletionGroup({
                   by {c.profiles?.display_name ?? "someone"}
                 </span>
               </span>
-              <Badge variant="accent">{c.points} pts</Badge>
+              <div className="flex items-center gap-3">
+                <Badge variant="accent">{c.points} pts</Badge>
+                <UncompleteButton completionId={c.id} />
+              </div>
             </li>
           ))}
         </ul>

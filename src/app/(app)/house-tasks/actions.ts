@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import type { Task } from "@/lib/types";
+import type { Task, TaskCompletion } from "@/lib/types";
 import { addInterval, toDateInputValue } from "./date-utils";
 
 // Anyone can complete anyone's task — the completer earns the points, not
@@ -58,6 +58,74 @@ export async function completeTask(taskId: string, performedBy?: string) {
     .eq("id", taskId);
   if (updateError) {
     throw new Error(updateError.message);
+  }
+
+  revalidatePath("/house-tasks");
+  revalidatePath("/house-tasks/completed");
+  revalidatePath("/house-tasks/scoreboard");
+}
+
+// Removes a logged completion (and its points). If it's the task's most
+// recent completion, also unwinds the state change completeTask made —
+// clears completed_at for a one-off task, or rolls a recurring task's
+// due_date back by one interval — so it lands exactly where it was right
+// before that completion. An older, superseded completion just gets
+// deleted from the history/points ledger, since the task's current state
+// has already moved on and can't be safely rewound past later completions.
+export async function uncompleteTask(completionId: string) {
+  const { supabase } = await requireUser();
+
+  const { data: completion, error: fetchError } = await supabase
+    .from("task_completions")
+    .select("*")
+    .eq("id", completionId)
+    .single<TaskCompletion>();
+
+  if (fetchError || !completion) {
+    throw new Error(fetchError?.message ?? "Completion not found.");
+  }
+
+  const { data: laterCompletions } = await supabase
+    .from("task_completions")
+    .select("id")
+    .eq("task_id", completion.task_id)
+    .gt("completed_at", completion.completed_at);
+
+  const isLatest = !laterCompletions || laterCompletions.length === 0;
+
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("id", completion.task_id)
+    .single<Task>();
+
+  const { error: deleteError } = await supabase
+    .from("task_completions")
+    .delete()
+    .eq("id", completionId);
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
+
+  if (task && isLatest) {
+    const isRecurring = !!task.recurrence_unit && !!task.recurrence_value;
+    if (isRecurring) {
+      if (task.due_date) {
+        const due_date = toDateInputValue(
+          addInterval(
+            new Date(task.due_date),
+            task.recurrence_unit!,
+            -task.recurrence_value!,
+          ),
+        );
+        await supabase.from("tasks").update({ due_date }).eq("id", task.id);
+      }
+    } else {
+      await supabase
+        .from("tasks")
+        .update({ completed_at: null })
+        .eq("id", task.id);
+    }
   }
 
   revalidatePath("/house-tasks");

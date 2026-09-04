@@ -255,6 +255,102 @@ function WeeklyCalendar({
   );
 }
 
+// Kiosk-only Calendar view: a day-by-day agenda instead of a person ×
+// weekday grid. The grid wasted a lot of space on empty cells (most days
+// have nothing due for most people) and each populated cell got tall once
+// buttons were sized for touch — grouping by day, only showing days that
+// actually have something, reads more like "what's happening today" and
+// scrolls far less. Reuses TaskGroup as-is (it already shows the
+// assignee's name per row, which the grid relied on the column for).
+function AgendaView({
+  peopleTasks,
+  days,
+  todayKey,
+  editableTaskIds,
+  kioskProfiles,
+}: {
+  peopleTasks: PersonTasks[];
+  days: Date[];
+  todayKey: string;
+  editableTaskIds: Set<string>;
+  kioskProfiles?: Profile[];
+}) {
+  const allTasks = useMemo(
+    () => peopleTasks.flatMap((g) => g.tasks),
+    [peopleTasks],
+  );
+
+  const byDay = useMemo(() => {
+    const map = new Map<string, TaskRow[]>();
+    for (const day of days) map.set(dateKey(day), []);
+    for (const task of allTasks) {
+      if (task.due_date && map.has(task.due_date)) {
+        map.get(task.due_date)!.push(task);
+      }
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) =>
+        normalizeTime(a.due_time).localeCompare(normalizeTime(b.due_time)),
+      );
+    }
+    return map;
+  }, [allTasks, days]);
+
+  const undated = allTasks.filter((t) => !t.due_date);
+  const populatedDays = days.filter(
+    (d) => (byDay.get(dateKey(d)) ?? []).length > 0,
+  );
+
+  if (populatedDays.length === 0 && undated.length === 0) {
+    return (
+      <p className="text-base text-neutral-500">Nothing due this week.</p>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {days.map((day, i) => {
+        const key = dateKey(day);
+        const items = byDay.get(key) ?? [];
+        if (items.length === 0) return null;
+        const isToday = key === todayKey;
+        return (
+          <div key={key}>
+            <div
+              className={`mb-2 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-base font-semibold ${
+                isToday
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-neutral-100 text-neutral-600"
+              }`}
+            >
+              {WEEKDAY_LABELS[i]} {day.getDate()}
+              {isToday && <span>· Today</span>}
+            </div>
+            <TaskGroup
+              items={items}
+              editableTaskIds={editableTaskIds}
+              kioskProfiles={kioskProfiles}
+            />
+          </div>
+        );
+      })}
+
+      {undated.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-lg font-semibold text-neutral-700">
+            No due date
+          </h2>
+          <TaskGroup
+            items={undated}
+            editableTaskIds={editableTaskIds}
+            kioskProfiles={kioskProfiles}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TaskBoard({
   myTasks,
   otherTasks,
@@ -424,17 +520,13 @@ export function TaskBoard({
             </button>
           </div>
           {peopleTasks ? (
-            peopleTasks.map(({ person, tasks }) => (
-              <WeeklyCalendar
-                key={person.id}
-                label={person.display_name ?? "Unnamed"}
-                tasks={tasks}
-                editableTaskIds={editableSet}
-                days={days}
-                todayKey={todayKey}
-                kioskProfiles={kioskProfiles}
-              />
-            ))
+            <AgendaView
+              peopleTasks={peopleTasks}
+              days={days}
+              todayKey={todayKey}
+              editableTaskIds={editableSet}
+              kioskProfiles={kioskProfiles}
+            />
           ) : (
             <>
               <WeeklyCalendar

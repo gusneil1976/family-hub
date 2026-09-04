@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import type { Profile } from "@/lib/types";
 import { KioskModal } from "@/components/kiosk-modal";
 import { WhoPicker } from "@/components/who-picker";
@@ -73,9 +73,15 @@ export function CompleteButton({
       type="button"
       disabled={pending}
       onClick={() => startTransition(() => completeTask(taskId))}
-      className="rounded-md bg-accent hover:bg-accent-hover px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+      aria-label="Complete"
+      title="Complete"
+      className="rounded-md bg-accent hover:bg-accent-hover p-2 text-white disabled:opacity-50"
     >
-      {pending ? "Saving…" : "Complete"}
+      {pending ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Check className="h-4 w-4" />
+      )}
     </button>
   );
 }

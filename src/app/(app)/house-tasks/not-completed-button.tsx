@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { KioskModal } from "@/components/kiosk-modal";
 import {
   KIOSK_BUTTON_PRIMARY,
@@ -75,9 +75,15 @@ export function NotCompletedButton({
           startTransition(() => markNotCompleted(taskId));
         }
       }}
-      className="rounded-md bg-red-600 hover:bg-red-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+      aria-label="Not completed"
+      title="Not completed"
+      className="rounded-md bg-red-600 hover:bg-red-700 p-2 text-white disabled:opacity-50"
     >
-      {pending ? "…" : "Not completed"}
+      {pending ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <X className="h-4 w-4" />
+      )}
     </button>
   );
 }

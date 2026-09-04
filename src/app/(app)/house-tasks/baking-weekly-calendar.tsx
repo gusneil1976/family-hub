@@ -189,10 +189,15 @@ export function BakingWeeklyCalendar({
   steps,
   days,
   todayKey,
+  wrapScroll = true,
 }: {
   steps: DueBakingStep[];
   days: Date[];
   todayKey: string;
+  // False when a parent already provides a shared horizontal-scroll
+  // container (so this grid scrolls in sync with sibling calendars stacked
+  // above it) instead of scrolling independently.
+  wrapScroll?: boolean;
 }) {
   const byDay = useMemo(() => {
     const map = new Map<string, DueBakingStep[]>();
@@ -210,37 +215,44 @@ export function BakingWeeklyCalendar({
       <h2 className="mb-2 text-sm font-semibold text-neutral-700">
         Curing Projects
       </h2>
-      <div className="overflow-x-auto">
-        <div className="grid min-w-[770px] grid-cols-7 gap-2">
-          {days.map((day, i) => {
-            const key = dateKey(day);
-            const isToday = key === todayKey;
-            const dayItems = byDay.get(key) ?? [];
-            return (
-              <div key={key}>
-                <div
-                  className={`mb-2 rounded-md px-2 py-1.5 text-center text-xs font-semibold ${
-                    isToday
-                      ? "bg-blue-600 text-white"
-                      : "bg-neutral-100 text-neutral-600"
-                  }`}
-                >
-                  {WEEKDAY_LABELS[i]} {day.getDate()}
+      {(() => {
+        const grid = (
+          <div className="grid min-w-[770px] grid-cols-7 gap-2">
+            {days.map((day, i) => {
+              const key = dateKey(day);
+              const isToday = key === todayKey;
+              const dayItems = byDay.get(key) ?? [];
+              return (
+                <div key={key}>
+                  <div
+                    className={`mb-2 rounded-md px-2 py-1.5 text-center text-xs font-semibold ${
+                      isToday
+                        ? "bg-blue-600 text-white"
+                        : "bg-neutral-100 text-neutral-600"
+                    }`}
+                  >
+                    {WEEKDAY_LABELS[i]} {day.getDate()}
+                  </div>
+                  <div className="space-y-2">
+                    {dayItems.length === 0 ? (
+                      <p className="px-1 text-xs text-neutral-400">—</p>
+                    ) : (
+                      dayItems.map((step) => (
+                        <StepCard key={step.id} step={step} />
+                      ))
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  {dayItems.length === 0 ? (
-                    <p className="px-1 text-xs text-neutral-400">—</p>
-                  ) : (
-                    dayItems.map((step) => (
-                      <StepCard key={step.id} step={step} />
-                    ))
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+              );
+            })}
+          </div>
+        );
+        return wrapScroll ? (
+          <div className="overflow-x-auto">{grid}</div>
+        ) : (
+          grid
+        );
+      })()}
     </div>
   );
 }

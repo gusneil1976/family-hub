@@ -202,41 +202,39 @@ function WeeklyCalendar({
   return (
     <div>
       <h2 className="mb-2 text-sm font-semibold text-neutral-700">{label}</h2>
-      <div className="overflow-x-auto">
-        <div className="grid min-w-[770px] grid-cols-7 gap-2">
-          {days.map((day, i) => {
-            const key = dateKey(day);
-            const isToday = key === todayKey;
-            const dayTasks = byDay.get(key) ?? [];
-            return (
-              <div key={key}>
-                <div
-                  className={`mb-2 rounded-md px-2 py-1.5 text-center text-xs font-semibold ${
-                    isToday
-                      ? "bg-accent text-accent-foreground"
-                      : "bg-neutral-100 text-neutral-600"
-                  }`}
-                >
-                  {WEEKDAY_LABELS[i]} {day.getDate()}
-                </div>
-                <div className="space-y-2">
-                  {dayTasks.length === 0 ? (
-                    <p className="px-1 text-xs text-neutral-400">—</p>
-                  ) : (
-                    dayTasks.map((task) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        editable={editableTaskIds.has(task.id)}
-                        kioskProfiles={kioskProfiles}
-                      />
-                    ))
-                  )}
-                </div>
+      <div className="grid min-w-[770px] grid-cols-7 gap-2">
+        {days.map((day, i) => {
+          const key = dateKey(day);
+          const isToday = key === todayKey;
+          const dayTasks = byDay.get(key) ?? [];
+          return (
+            <div key={key}>
+              <div
+                className={`mb-2 rounded-md px-2 py-1.5 text-center text-xs font-semibold ${
+                  isToday
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-neutral-100 text-neutral-600"
+                }`}
+              >
+                {WEEKDAY_LABELS[i]} {day.getDate()}
               </div>
-            );
-          })}
-        </div>
+              <div className="space-y-2">
+                {dayTasks.length === 0 ? (
+                  <p className="px-1 text-xs text-neutral-400">—</p>
+                ) : (
+                  dayTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      editable={editableTaskIds.has(task.id)}
+                      kioskProfiles={kioskProfiles}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {undated.length > 0 && (
@@ -520,39 +518,56 @@ export function TaskBoard({
             </button>
           </div>
           {peopleTasks ? (
-            <AgendaView
-              peopleTasks={peopleTasks}
-              days={days}
-              todayKey={todayKey}
-              editableTaskIds={editableSet}
-              kioskProfiles={kioskProfiles}
-            />
-          ) : (
             <>
-              <WeeklyCalendar
-                label="My tasks"
-                tasks={myTasks}
-                editableTaskIds={editableSet}
+              <AgendaView
+                peopleTasks={peopleTasks}
                 days={days}
                 todayKey={todayKey}
-                kioskProfiles={kioskProfiles}
-              />
-              <WeeklyCalendar
-                label="Other tasks"
-                tasks={otherTasks}
                 editableTaskIds={editableSet}
-                days={days}
-                todayKey={todayKey}
                 kioskProfiles={kioskProfiles}
               />
+              {bakingSteps && bakingSteps.length > 0 && (
+                <BakingWeeklyCalendar
+                  steps={bakingSteps}
+                  days={days}
+                  todayKey={todayKey}
+                />
+              )}
             </>
-          )}
-          {bakingSteps && bakingSteps.length > 0 && (
-            <BakingWeeklyCalendar
-              steps={bakingSteps}
-              days={days}
-              todayKey={todayKey}
-            />
+          ) : (
+            // One shared horizontal-scroll container for all three grids
+            // (My tasks/Other tasks/Curing Projects) instead of each
+            // scrolling independently — otherwise, stacked on a narrow
+            // screen, scrolling one horizontally leaves the others showing
+            // different days.
+            <div className="overflow-x-auto">
+              <div className="space-y-8">
+                <WeeklyCalendar
+                  label="My tasks"
+                  tasks={myTasks}
+                  editableTaskIds={editableSet}
+                  days={days}
+                  todayKey={todayKey}
+                  kioskProfiles={kioskProfiles}
+                />
+                <WeeklyCalendar
+                  label="Other tasks"
+                  tasks={otherTasks}
+                  editableTaskIds={editableSet}
+                  days={days}
+                  todayKey={todayKey}
+                  kioskProfiles={kioskProfiles}
+                />
+                {bakingSteps && bakingSteps.length > 0 && (
+                  <BakingWeeklyCalendar
+                    steps={bakingSteps}
+                    days={days}
+                    todayKey={todayKey}
+                    wrapScroll={false}
+                  />
+                )}
+              </div>
+            </div>
           )}
         </div>
       )}

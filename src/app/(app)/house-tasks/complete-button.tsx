@@ -35,7 +35,7 @@ export function CompleteButton({
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Complete"
-          className={`bg-accent hover:bg-accent-hover text-white ${KIOSK_ICON_BUTTON}`}
+          className={`bg-green-600 hover:bg-green-700 text-white ${KIOSK_ICON_BUTTON}`}
         >
           <Check className="h-7 w-7" />
         </button>
@@ -58,7 +58,7 @@ export function CompleteButton({
                   close();
                 })
               }
-              className={`flex-1 bg-accent hover:bg-accent-hover text-white disabled:opacity-50 ${KIOSK_BUTTON_PRIMARY}`}
+              className={`flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 ${KIOSK_BUTTON_PRIMARY}`}
             >
               {pending ? "Saving…" : "Confirm"}
             </button>
@@ -75,7 +75,7 @@ export function CompleteButton({
       onClick={() => startTransition(() => completeTask(taskId))}
       aria-label="Complete"
       title="Complete"
-      className="rounded-md bg-accent hover:bg-accent-hover p-2 text-white disabled:opacity-50"
+      className="rounded-md bg-green-600 hover:bg-green-700 p-2 text-white disabled:opacity-50"
     >
       {pending ? (
         <Loader2 className="h-4 w-4 animate-spin" />

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui";
 import type { DueBakingStep } from "../curing/get-due-steps";
 import { BakingTaskList, BakingWeeklyCalendar } from "./baking-weekly-calendar";
 import { CompleteButton } from "./complete-button";
+import { KIOSK_LINK, KIOSK_ROW } from "../kiosk-styles";
 import { NotCompletedButton } from "./not-completed-button";
 import {
   formatDueDateTime,
@@ -47,8 +48,14 @@ function TaskGroup({
   editableTaskIds: Set<string>;
   kioskProfiles?: Profile[];
 }) {
+  const isKiosk = !!kioskProfiles;
+
   if (!items.length) {
-    return <p className="text-sm text-neutral-500">Nothing here.</p>;
+    return (
+      <p className={isKiosk ? "text-base text-neutral-500" : "text-sm text-neutral-500"}>
+        Nothing here.
+      </p>
+    );
   }
 
   return (
@@ -64,11 +71,15 @@ function TaskGroup({
         return (
           <li
             key={task.id}
-            className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
+            className={`flex flex-wrap items-center justify-between ${
+              isKiosk ? KIOSK_ROW : "gap-3 px-4 py-3 text-sm"
+            }`}
           >
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium text-neutral-900">
+                <span
+                  className={`font-medium text-neutral-900 ${isKiosk ? "text-lg" : ""}`}
+                >
                   {task.title}
                 </span>
                 <Badge variant="accent">
@@ -95,12 +106,16 @@ function TaskGroup({
               {editableTaskIds.has(task.id) && (
                 <Link
                   href={`/house-tasks/${task.id}/edit`}
-                  className="text-sm text-neutral-500 underline hover:text-neutral-900"
+                  className={
+                    isKiosk
+                      ? `text-neutral-500 hover:text-neutral-900 ${KIOSK_LINK}`
+                      : "text-sm text-neutral-500 underline hover:text-neutral-900"
+                  }
                 >
                   Edit
                 </Link>
               )}
-              <NotCompletedButton taskId={task.id} />
+              <NotCompletedButton taskId={task.id} isKiosk={isKiosk} />
               <CompleteButton taskId={task.id} kioskProfiles={kioskProfiles} />
             </div>
           </li>
@@ -143,7 +158,7 @@ function TaskCard({
           </Link>
         )}
         <div className="flex flex-wrap items-center gap-1.5">
-          <NotCompletedButton taskId={task.id} />
+          <NotCompletedButton taskId={task.id} isKiosk={!!kioskProfiles} />
           <CompleteButton taskId={task.id} kioskProfiles={kioskProfiles} />
         </div>
       </div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { WatchListItem } from "@/lib/types";
 import { Badge, PageHeader } from "@/components/ui";
+import { KIOSK_BUTTON_PRIMARY, KIOSK_LINK, KIOSK_ROW } from "../kiosk-styles";
 import { WatchToggles } from "./watch-toggles";
 
 type ItemRow = WatchListItem & {
@@ -17,13 +18,19 @@ function ItemList({
   items,
   showCategoryBadge = false,
   canManage,
+  isKiosk,
 }: {
   items: ItemRow[];
   showCategoryBadge?: boolean;
   canManage: (item: ItemRow) => boolean;
+  isKiosk: boolean;
 }) {
   if (!items.length) {
-    return <p className="text-sm text-neutral-500">Nothing here yet.</p>;
+    return (
+      <p className={isKiosk ? "text-base text-neutral-500" : "text-sm text-neutral-500"}>
+        Nothing here yet.
+      </p>
+    );
   }
 
   return (
@@ -31,11 +38,15 @@ function ItemList({
       {items.map((item) => (
         <li
           key={item.id}
-          className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
+          className={`flex flex-wrap items-center justify-between ${
+            isKiosk ? KIOSK_ROW : "gap-3 px-4 py-3 text-sm"
+          }`}
         >
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium text-neutral-900">
+              <span
+                className={`font-medium text-neutral-900 ${isKiosk ? "text-lg" : ""}`}
+              >
                 {item.title}
               </span>
               {showCategoryBadge && (
@@ -54,7 +65,11 @@ function ItemList({
             {canManage(item) && (
               <Link
                 href={`/watch-list/${item.id}/edit`}
-                className="text-sm text-neutral-500 underline hover:text-neutral-900"
+                className={
+                  isKiosk
+                    ? `text-neutral-500 hover:text-neutral-900 ${KIOSK_LINK}`
+                    : "text-sm text-neutral-500 underline hover:text-neutral-900"
+                }
               >
                 Edit
               </Link>
@@ -63,6 +78,7 @@ function ItemList({
               itemId={item.id}
               isWatching={item.is_watching}
               watched={item.watched}
+              isKiosk={isKiosk}
             />
           </div>
         </li>
@@ -73,6 +89,7 @@ function ItemList({
 
 export default async function WatchListPage() {
   const { supabase, user, profile } = await requireUser();
+  const isKiosk = !!profile?.is_kiosk;
 
   const { data: items } = await supabase
     .from("watch_list_items")
@@ -102,7 +119,11 @@ export default async function WatchListPage() {
         action={
           <Link
             href="/watch-list/new"
-            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
+            className={
+              isKiosk
+                ? `bg-accent text-accent-foreground hover:bg-accent-hover ${KIOSK_BUTTON_PRIMARY}`
+                : "rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
+            }
           >
             Suggest something
           </Link>
@@ -122,6 +143,7 @@ export default async function WatchListPage() {
             <ItemList
               items={active.filter((i) => i.category === "film")}
               canManage={canManage}
+              isKiosk={isKiosk}
             />
           </section>
 
@@ -132,6 +154,7 @@ export default async function WatchListPage() {
             <ItemList
               items={active.filter((i) => i.category === "tv_show")}
               canManage={canManage}
+              isKiosk={isKiosk}
             />
           </section>
 
@@ -144,6 +167,7 @@ export default async function WatchListPage() {
                 items={archive}
                 showCategoryBadge
                 canManage={canManage}
+                isKiosk={isKiosk}
               />
             </section>
           )}

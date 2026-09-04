@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { ChevronDown, ChevronUp, UtensilsCrossed, X } from "lucide-react";
 import type { Meal, Profile } from "@/lib/types";
 import { WhoPicker } from "@/components/who-picker";
+import { KIOSK_BUTTON_PRIMARY } from "../../kiosk-styles";
 import { MealImage } from "../meals/meal-image";
 
 type ActionState = { error: string } | undefined;
@@ -25,6 +26,7 @@ export function VoteForm({
   const [state, formAction, pending] = useActionState(action, undefined);
   const [selected, setSelected] = useState<string[]>(initialSelected);
   const mealById = new Map(meals.map((m) => [m.id, m]));
+  const isKiosk = !!kioskProfiles;
 
   function toggle(mealId: string) {
     setSelected((prev) =>
@@ -67,15 +69,21 @@ export function VoteForm({
             {selected.map((id, i) => (
               <li
                 key={id}
-                className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
+                className={`flex items-center justify-between gap-3 ${
+                  isKiosk ? "px-5 py-4 text-base" : "px-4 py-2.5 text-sm"
+                }`}
               >
                 <div className="flex items-center gap-3">
                   <span
-                    className={`flex h-6 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${RANK_STYLES[i]}`}
+                    className={`flex shrink-0 items-center justify-center rounded-full font-semibold text-white ${
+                      isKiosk ? "h-8 w-14 text-sm" : "h-6 w-10 text-xs"
+                    } ${RANK_STYLES[i]}`}
                   >
                     {RANK_LABELS[i]}
                   </span>
-                  <span className="font-medium text-neutral-900">
+                  <span
+                    className={`font-medium text-neutral-900 ${isKiosk ? "text-lg" : ""}`}
+                  >
                     {mealById.get(id)?.name}
                   </span>
                 </div>
@@ -85,26 +93,32 @@ export function VoteForm({
                     onClick={() => move(i, -1)}
                     disabled={i === 0}
                     aria-label="Move up"
-                    className="rounded p-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30"
+                    className={`rounded text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 ${
+                      isKiosk ? "p-3" : "p-1"
+                    }`}
                   >
-                    <ChevronUp className="h-4 w-4" />
+                    <ChevronUp className={isKiosk ? "h-7 w-7" : "h-4 w-4"} />
                   </button>
                   <button
                     type="button"
                     onClick={() => move(i, 1)}
                     disabled={i === selected.length - 1}
                     aria-label="Move down"
-                    className="rounded p-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30"
+                    className={`rounded text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 ${
+                      isKiosk ? "p-3" : "p-1"
+                    }`}
                   >
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className={isKiosk ? "h-7 w-7" : "h-4 w-4"} />
                   </button>
                   <button
                     type="button"
                     onClick={() => toggle(id)}
                     aria-label="Remove"
-                    className="rounded p-1 text-neutral-500 hover:bg-neutral-100"
+                    className={`rounded text-neutral-500 hover:bg-neutral-100 ${
+                      isKiosk ? "p-3" : "p-1"
+                    }`}
                   >
-                    <X className="h-4 w-4" />
+                    <X className={isKiosk ? "h-7 w-7" : "h-4 w-4"} />
                   </button>
                 </div>
               </li>
@@ -168,7 +182,11 @@ export function VoteForm({
       <button
         type="submit"
         disabled={pending || selected.length === 0}
-        className="rounded-md bg-accent hover:bg-accent-hover px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className={
+          isKiosk
+            ? `bg-accent hover:bg-accent-hover text-white disabled:opacity-50 ${KIOSK_BUTTON_PRIMARY}`
+            : "rounded-md bg-accent hover:bg-accent-hover px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        }
       >
         {pending ? "Saving…" : "Save my votes"}
       </button>

@@ -2,6 +2,9 @@
 
 import { useState, useTransition } from "react";
 import type { Profile } from "@/lib/types";
+import { KioskModal } from "@/components/kiosk-modal";
+import { WhoPicker } from "@/components/who-picker";
+import { KIOSK_BUTTON_PRIMARY, KIOSK_BUTTON_SECONDARY } from "../kiosk-styles";
 import { completeTask } from "./actions";
 
 export function CompleteButton({
@@ -12,64 +15,50 @@ export function CompleteButton({
   kioskProfiles?: Profile[];
 }) {
   const [pending, startTransition] = useTransition();
-  const [picking, setPicking] = useState(false);
+  const [open, setOpen] = useState(false);
   const [who, setWho] = useState("");
 
+  function close() {
+    setOpen(false);
+    setWho("");
+  }
+
   if (kioskProfiles) {
-    if (!picking) {
-      return (
+    return (
+      <>
         <button
           type="button"
-          onClick={() => setPicking(true)}
-          className="rounded-md bg-accent hover:bg-accent-hover px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+          onClick={() => setOpen(true)}
+          className={`bg-accent hover:bg-accent-hover text-white ${KIOSK_BUTTON_PRIMARY}`}
         >
           Complete
         </button>
-      );
-    }
-
-    return (
-      <div className="flex items-center gap-1.5">
-        <select
-          value={who}
-          onChange={(e) => setWho(e.target.value)}
-          className="rounded-md border border-neutral-300 px-2 py-1 text-sm focus:border-accent focus:outline-none"
-        >
-          <option value="" disabled>
-            Who?
-          </option>
-          {kioskProfiles.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.display_name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          disabled={pending || !who}
-          onClick={() =>
-            startTransition(async () => {
-              await completeTask(taskId, who);
-              setPicking(false);
-              setWho("");
-            })
-          }
-          className="rounded-md bg-accent hover:bg-accent-hover px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-        >
-          {pending ? "Saving…" : "Confirm"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setPicking(false);
-            setWho("");
-          }}
-          aria-label="Cancel"
-          className="rounded-md px-2 py-1.5 text-sm text-neutral-400 hover:text-neutral-700"
-        >
-          ✕
-        </button>
-      </div>
+        <KioskModal open={open} onClose={close} title="Who's completing this?">
+          <WhoPicker profiles={kioskProfiles} label="" onChange={setWho} />
+          <div className="mt-6 flex gap-3">
+            <button
+              type="button"
+              onClick={close}
+              className={`flex-1 border-neutral-300 text-neutral-700 hover:bg-neutral-50 ${KIOSK_BUTTON_SECONDARY}`}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={pending || !who}
+              onClick={() =>
+                startTransition(async () => {
+                  await completeTask(taskId, who);
+                  close();
+                })
+              }
+              className={`flex-1 bg-accent hover:bg-accent-hover text-white disabled:opacity-50 ${KIOSK_BUTTON_PRIMARY}`}
+            >
+              {pending ? "Saving…" : "Confirm"}
+            </button>
+          </div>
+        </KioskModal>
+      </>
     );
   }
 

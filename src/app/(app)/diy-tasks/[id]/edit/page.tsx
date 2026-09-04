@@ -56,7 +56,7 @@ export default async function EditDiyTaskPage({
         projectOptions={projectOptions}
       />
       <div className="mt-6 border-t border-neutral-200 pt-4">
-        <DeleteDiyTaskButton taskId={task.id} />
+        <DeleteDiyTaskButton taskId={task.id} isKiosk={!!profile?.is_kiosk} />
       </div>
     </div>
   );

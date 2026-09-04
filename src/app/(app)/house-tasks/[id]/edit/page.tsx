@@ -55,7 +55,7 @@ export default async function EditTaskPage({
       />
       <div className="mt-6 flex items-center gap-4 border-t border-neutral-200 pt-4">
         <ActiveToggle taskId={task.id} isActive={task.is_active} />
-        <DeleteTaskButton taskId={task.id} />
+        <DeleteTaskButton taskId={task.id} isKiosk={!!profile?.is_kiosk} />
       </div>
     </div>
   );

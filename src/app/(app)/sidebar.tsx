@@ -5,14 +5,11 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   BarChart3,
-  CheckSquare,
   ChefHat,
   ClipboardCheck,
   Film,
-  History,
   Home,
   ListChecks,
-  ListTodo,
   LogOut,
   Menu,
   Palette,
@@ -20,7 +17,6 @@ import {
   ShieldCheck,
   Tag,
   Target,
-  Trophy,
   Upload,
   User,
   UtensilsCrossed,
@@ -30,28 +26,13 @@ import {
   X,
 } from "lucide-react";
 import { signOut } from "./actions";
-
-type IconType = React.ComponentType<{ className?: string }>;
-
-type NavItem = {
-  label: string;
-  href: string;
-  icon: IconType;
-  match: (pathname: string) => boolean;
-};
-
-const exact = (href: string) => (pathname: string) => pathname === href;
-
-const MEAL_VOTE_NAV: NavItem[] = [
-  { label: "Vote", href: "/meal-vote/vote", icon: CheckSquare, match: exact("/meal-vote/vote") },
-  { label: "Results", href: "/meal-vote/results", icon: Trophy, match: exact("/meal-vote/results") },
-  {
-    label: "Meals",
-    href: "/meal-vote/meals",
-    icon: UtensilsCrossed,
-    match: (p) => p.startsWith("/meal-vote/meals"),
-  },
-];
+import {
+  exact,
+  HOUSE_TASKS_NAV,
+  MEAL_VOTE_NAV,
+  type IconType,
+  type NavItem,
+} from "./nav-items";
 
 const SPEND_TRACKER_NAV: NavItem[] = [
   {
@@ -133,30 +114,6 @@ const CURING_NAV: NavItem[] = [
   },
 ];
 
-const HOUSE_TASKS_NAV: NavItem[] = [
-  {
-    label: "Tasks",
-    href: "/house-tasks",
-    icon: ListTodo,
-    match: (p) =>
-      p === "/house-tasks" ||
-      p.startsWith("/house-tasks/new") ||
-      /^\/house-tasks\/[^/]+\/edit$/.test(p),
-  },
-  {
-    label: "Completed",
-    href: "/house-tasks/completed",
-    icon: History,
-    match: exact("/house-tasks/completed"),
-  },
-  {
-    label: "Scoreboard",
-    href: "/house-tasks/scoreboard",
-    icon: BarChart3,
-    match: exact("/house-tasks/scoreboard"),
-  },
-];
-
 function SidebarLink({
   href,
   active,
@@ -183,6 +140,8 @@ function SidebarLink({
   );
 }
 
+// Kiosk logins never reach this component — they get KioskNav instead (see
+// (app)/layout.tsx) — so there's no is_kiosk branching needed in here.
 export function Sidebar({
   email,
   isAdmin,
@@ -190,7 +149,6 @@ export function Sidebar({
   hasSpendTrackerAccess,
   hasMiniBreaksAccess,
   hasBakingAccess,
-  isKiosk,
 }: {
   email: string | null;
   isAdmin: boolean;
@@ -198,7 +156,6 @@ export function Sidebar({
   hasSpendTrackerAccess: boolean;
   hasMiniBreaksAccess: boolean;
   hasBakingAccess: boolean;
-  isKiosk: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -392,14 +349,12 @@ export function Sidebar({
             label="Appearance"
           />
         )}
-        {!isKiosk && (
-          <SidebarLink
-            href="/account"
-            active={pathname === "/account"}
-            icon={User}
-            label="Account"
-          />
-        )}
+        <SidebarLink
+          href="/account"
+          active={pathname === "/account"}
+          icon={User}
+          label="Account"
+        />
         {email && (
           <p className="truncate px-2 py-1 text-xs text-sidebar-muted">
             {email}

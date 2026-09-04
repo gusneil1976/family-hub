@@ -86,25 +86,47 @@ export default async function HubPage() {
         description="Choose an app."
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {apps.map((app) => (
-          <Link
-            key={app.href}
-            href={app.href}
-            className="group rounded-xl border border-card-border bg-card p-5 shadow-sm transition-colors hover:border-accent"
-          >
-            <div className="flex items-start justify-between">
-              <app.icon className="h-6 w-6 text-accent" />
-            </div>
-            <h2 className="mt-3 font-semibold text-foreground">
-              {app.name}
-            </h2>
-            <p className="mt-1 text-sm text-neutral-500">
-              {app.description}
-            </p>
-          </Link>
-        ))}
-      </div>
+      {profile?.is_kiosk ? (
+        <div className="grid gap-5 sm:grid-cols-2">
+          {apps.map((app) => (
+            <Link
+              key={app.href}
+              href={app.href}
+              className="group flex items-center gap-5 rounded-2xl border-2 border-card-border bg-card p-7 shadow-sm transition-colors hover:border-accent"
+            >
+              <app.icon className="h-14 w-14 shrink-0 text-accent" />
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">
+                  {app.name}
+                </h2>
+                <p className="mt-1 text-base text-neutral-500">
+                  {app.description}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-3">
+          {apps.map((app) => (
+            <Link
+              key={app.href}
+              href={app.href}
+              className="group rounded-xl border border-card-border bg-card p-5 shadow-sm transition-colors hover:border-accent"
+            >
+              <div className="flex items-start justify-between">
+                <app.icon className="h-6 w-6 text-accent" />
+              </div>
+              <h2 className="mt-3 font-semibold text-foreground">
+                {app.name}
+              </h2>
+              <p className="mt-1 text-sm text-neutral-500">
+                {app.description}
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

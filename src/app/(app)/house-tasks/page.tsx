@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import type { Profile, Task } from "@/lib/types";
 import { PageHeader, StatTile, StatTileRow } from "@/components/ui";
 import { getUpcomingBakingSteps } from "../curing/get-due-steps";
+import { KIOSK_BUTTON_PRIMARY } from "../kiosk-styles";
 import { TaskBoard } from "./task-board";
 import { isOverdue, startOfWeek } from "./date-utils";
 
@@ -104,7 +105,11 @@ export default async function HouseTasksPage() {
         action={
           <Link
             href="/house-tasks/new"
-            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
+            className={
+              profile?.is_kiosk
+                ? `bg-accent text-accent-foreground hover:bg-accent-hover ${KIOSK_BUTTON_PRIMARY}`
+                : "rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
+            }
           >
             New task
           </Link>

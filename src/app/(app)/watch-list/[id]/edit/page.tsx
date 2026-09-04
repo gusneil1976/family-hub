@@ -54,7 +54,7 @@ export default async function EditWatchListItemPage({
         submitLabel="Save changes"
       />
       <div className="mt-6 border-t border-neutral-200 pt-4">
-        <DeleteItemButton itemId={item.id} />
+        <DeleteItemButton itemId={item.id} isKiosk={!!profile?.is_kiosk} />
       </div>
     </div>
   );

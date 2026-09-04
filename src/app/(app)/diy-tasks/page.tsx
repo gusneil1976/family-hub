@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { DiyTask } from "@/lib/types";
 import { Badge, PageHeader } from "@/components/ui";
+import { KIOSK_BUTTON_PRIMARY, KIOSK_LINK } from "../kiosk-styles";
 import { CompleteToggle } from "./complete-toggle";
 import { ProgressSlider } from "./progress-slider";
 
@@ -28,12 +29,18 @@ function groupByProject(items: DiyTask[]) {
 function ProjectGroups({
   items,
   canManage,
+  isKiosk,
 }: {
   items: DiyTask[];
   canManage: (task: DiyTask) => boolean;
+  isKiosk: boolean;
 }) {
   if (!items.length) {
-    return <p className="text-sm text-neutral-500">Nothing here yet.</p>;
+    return (
+      <p className={isKiosk ? "text-base text-neutral-500" : "text-sm text-neutral-500"}>
+        Nothing here yet.
+      </p>
+    );
   }
 
   return (
@@ -44,7 +51,11 @@ function ProjectGroups({
           open
           className="overflow-hidden rounded-xl border border-card-border bg-card shadow-sm"
         >
-          <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-neutral-700">
+          <summary
+            className={`cursor-pointer select-none px-4 py-3 font-semibold text-neutral-700 ${
+              isKiosk ? "text-lg" : "text-sm"
+            }`}
+          >
             {project}{" "}
             <span className="font-normal text-neutral-400">
               ({tasks.length})
@@ -54,11 +65,15 @@ function ProjectGroups({
             {tasks.map((task) => (
               <li
                 key={task.id}
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
+                className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${
+                  isKiosk ? "text-base" : "text-sm"
+                }`}
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-neutral-900">
+                    <span
+                      className={`font-medium text-neutral-900 ${isKiosk ? "text-lg" : ""}`}
+                    >
                       {task.title}
                     </span>
                     {task.hours_estimate != null && (
@@ -79,11 +94,16 @@ function ProjectGroups({
                   <CompleteToggle
                     taskId={task.id}
                     completed={!!task.completed_at}
+                    isKiosk={isKiosk}
                   />
                   {canManage(task) && (
                     <Link
                       href={`/diy-tasks/${task.id}/edit`}
-                      className="text-sm text-neutral-500 underline hover:text-neutral-900"
+                      className={
+                        isKiosk
+                          ? `text-neutral-500 hover:text-neutral-900 ${KIOSK_LINK}`
+                          : "text-sm text-neutral-500 underline hover:text-neutral-900"
+                      }
                     >
                       Edit
                     </Link>
@@ -100,6 +120,7 @@ function ProjectGroups({
 
 export default async function DiyTasksPage() {
   const { supabase, user, profile } = await requireUser();
+  const isKiosk = !!profile?.is_kiosk;
 
   const { data: tasks } = await supabase
     .from("diy_tasks")
@@ -124,7 +145,11 @@ export default async function DiyTasksPage() {
         action={
           <Link
             href="/diy-tasks/new"
-            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
+            className={
+              isKiosk
+                ? `bg-accent text-accent-foreground hover:bg-accent-hover ${KIOSK_BUTTON_PRIMARY}`
+                : "rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
+            }
           >
             New task
           </Link>
@@ -132,7 +157,7 @@ export default async function DiyTasksPage() {
       />
 
       <section className="mb-6">
-        <ProjectGroups items={active} canManage={canManage} />
+        <ProjectGroups items={active} canManage={canManage} isKiosk={isKiosk} />
       </section>
 
       {completed.length > 0 && (
@@ -140,7 +165,7 @@ export default async function DiyTasksPage() {
           <h2 className="mb-2 text-sm font-semibold text-neutral-700">
             Completed
           </h2>
-          <ProjectGroups items={completed} canManage={canManage} />
+          <ProjectGroups items={completed} canManage={canManage} isKiosk={isKiosk} />
         </section>
       )}
     </div>

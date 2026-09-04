@@ -1,8 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { X } from "lucide-react";
 import { KioskModal } from "@/components/kiosk-modal";
-import { KIOSK_BUTTON_PRIMARY, KIOSK_BUTTON_SECONDARY } from "../kiosk-styles";
+import {
+  KIOSK_BUTTON_PRIMARY,
+  KIOSK_BUTTON_SECONDARY,
+  KIOSK_ICON_BUTTON,
+} from "../kiosk-styles";
 import { markNotCompleted } from "./actions";
 
 export function NotCompletedButton({
@@ -21,9 +26,10 @@ export function NotCompletedButton({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className={`bg-red-600 hover:bg-red-700 text-white ${KIOSK_BUTTON_PRIMARY}`}
+          aria-label="Not completed"
+          className={`bg-red-600 hover:bg-red-700 text-white ${KIOSK_ICON_BUTTON}`}
         >
-          Not completed
+          <X className="h-7 w-7" />
         </button>
         <KioskModal open={open} onClose={() => setOpen(false)} title="Mark as not completed?">
           <p className="text-base text-neutral-600">

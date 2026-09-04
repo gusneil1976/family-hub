@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Check } from "lucide-react";
 import type { Profile } from "@/lib/types";
 import { KioskModal } from "@/components/kiosk-modal";
 import { WhoPicker } from "@/components/who-picker";
-import { KIOSK_BUTTON_PRIMARY, KIOSK_BUTTON_SECONDARY } from "../kiosk-styles";
+import {
+  KIOSK_BUTTON_PRIMARY,
+  KIOSK_BUTTON_SECONDARY,
+  KIOSK_ICON_BUTTON,
+} from "../kiosk-styles";
 import { completeTask } from "./actions";
 
 export function CompleteButton({
@@ -29,9 +34,10 @@ export function CompleteButton({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className={`bg-accent hover:bg-accent-hover text-white ${KIOSK_BUTTON_PRIMARY}`}
+          aria-label="Complete"
+          className={`bg-accent hover:bg-accent-hover text-white ${KIOSK_ICON_BUTTON}`}
         >
-          Complete
+          <Check className="h-7 w-7" />
         </button>
         <KioskModal open={open} onClose={close} title="Who's completing this?">
           <WhoPicker profiles={kioskProfiles} label="" onChange={setWho} />

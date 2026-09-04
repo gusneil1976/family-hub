@@ -27,25 +27,32 @@ function CompletionGroup({
         <p className="text-sm text-neutral-500">Nothing here.</p>
       ) : (
         <ul className="divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
-          {items.map((c) => (
-            <li
-              key={c.id}
-              className="flex items-center justify-between gap-3 px-4 py-2 text-sm"
-            >
-              <span>
-                <span className="font-medium text-neutral-900">
-                  {c.tasks?.title ?? "Deleted task"}
+          {items.map((c) => {
+            const missed = c.points < 0;
+            return (
+              <li
+                key={c.id}
+                className="flex items-center justify-between gap-3 px-4 py-2 text-sm"
+              >
+                <span>
+                  <span className="font-medium text-neutral-900">
+                    {c.tasks?.title ?? "Deleted task"}
+                  </span>
+                  <span className="ml-2 text-neutral-500">
+                    {missed
+                      ? `not completed — ${c.profiles?.display_name ?? "someone"}`
+                      : `by ${c.profiles?.display_name ?? "someone"}`}
+                  </span>
                 </span>
-                <span className="ml-2 text-neutral-500">
-                  by {c.profiles?.display_name ?? "someone"}
-                </span>
-              </span>
-              <div className="flex items-center gap-3">
-                <Badge variant="accent">{c.points} pts</Badge>
-                <UncompleteButton completionId={c.id} />
-              </div>
-            </li>
-          ))}
+                <div className="flex items-center gap-3">
+                  <Badge variant={missed ? "danger" : "accent"}>
+                    {c.points} pts
+                  </Badge>
+                  <UncompleteButton completionId={c.id} />
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui";
 import type { DueBakingStep } from "../curing/get-due-steps";
 import { BakingTaskList, BakingWeeklyCalendar } from "./baking-weekly-calendar";
 import { CompleteButton } from "./complete-button";
+import { NotCompletedButton } from "./not-completed-button";
 import {
   formatDueDateTime,
   formatRecurrence,
@@ -99,6 +100,7 @@ function TaskGroup({
                   Edit
                 </Link>
               )}
+              <NotCompletedButton taskId={task.id} />
               <CompleteButton taskId={task.id} kioskProfiles={kioskProfiles} />
             </div>
           </li>

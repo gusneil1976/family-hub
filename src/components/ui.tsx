@@ -14,13 +14,14 @@ export function Card({
   );
 }
 
-type BadgeVariant = "neutral" | "accent" | "warning" | "success";
+type BadgeVariant = "neutral" | "accent" | "warning" | "success" | "danger";
 
 const BADGE_STYLES: Record<BadgeVariant, string> = {
   neutral: "bg-neutral-100 text-neutral-600",
   accent: "bg-accent-soft text-accent-soft-foreground",
   warning: "bg-amber-100 text-amber-700",
   success: "bg-emerald-100 text-emerald-700",
+  danger: "bg-red-100 text-red-700",
 };
 
 export function Badge({

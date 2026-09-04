@@ -65,6 +65,38 @@ export async function completeTask(taskId: string, performedBy?: string) {
   revalidatePath("/house-tasks/scoreboard");
 }
 
+// Deducts a task's points from whoever it's assigned to, without touching
+// the task itself — it stays pending, same due date, so it can still be
+// completed (or marked not completed again) later. Unlike completeTask,
+// this always debits the assignee specifically, not whoever clicks the
+// button, so there's no "who" picker even on kiosk.
+export async function markNotCompleted(taskId: string) {
+  const { supabase } = await requireUser();
+
+  const { data: task, error: fetchError } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("id", taskId)
+    .single<Task>();
+
+  if (fetchError || !task) {
+    throw new Error(fetchError?.message ?? "Task not found.");
+  }
+
+  const { error } = await supabase.from("task_completions").insert({
+    task_id: task.id,
+    completed_by: task.assigned_to,
+    points: -task.points,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/house-tasks");
+  revalidatePath("/house-tasks/completed");
+  revalidatePath("/house-tasks/scoreboard");
+}
+
 // Removes a logged completion (and its points). If it's the task's most
 // recent completion, also unwinds the state change completeTask made —
 // clears completed_at for a one-off task, or rolls a recurring task's
@@ -72,6 +104,8 @@ export async function completeTask(taskId: string, performedBy?: string) {
 // before that completion. An older, superseded completion just gets
 // deleted from the history/points ledger, since the task's current state
 // has already moved on and can't be safely rewound past later completions.
+// A markNotCompleted penalty (negative points) never touched the task's
+// state to begin with, so it's always just a plain delete.
 export async function uncompleteTask(completionId: string) {
   const { supabase } = await requireUser();
 
@@ -107,7 +141,7 @@ export async function uncompleteTask(completionId: string) {
     throw new Error(deleteError.message);
   }
 
-  if (task && isLatest) {
+  if (task && isLatest && completion.points >= 0) {
     const isRecurring = !!task.recurrence_unit && !!task.recurrence_value;
     if (isRecurring) {
       if (task.due_date) {

@@ -133,18 +133,19 @@ function TaskCard({
         {normalizeTime(task.due_time)}
         {task.assignee?.display_name && <> · {task.assignee.display_name}</>}
       </p>
-      <div className="mt-1.5 flex items-center justify-between gap-2">
-        {editable ? (
+      <div className="mt-1.5 space-y-1.5">
+        {editable && (
           <Link
             href={`/house-tasks/${task.id}/edit`}
             className="text-neutral-500 underline hover:text-neutral-900"
           >
             Edit
           </Link>
-        ) : (
-          <span />
         )}
-        <CompleteButton taskId={task.id} kioskProfiles={kioskProfiles} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <NotCompletedButton taskId={task.id} />
+          <CompleteButton taskId={task.id} kioskProfiles={kioskProfiles} />
+        </div>
       </div>
     </div>
   );

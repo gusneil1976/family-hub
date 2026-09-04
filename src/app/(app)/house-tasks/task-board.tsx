@@ -254,7 +254,7 @@ export function TaskBoard({
   // family member instead of the "My tasks"/"Other tasks" split below.
   peopleTasks?: PersonTasks[];
 }) {
-  const [view, setView] = useState<"list" | "calendar">("calendar");
+  const [view, setView] = useState<"list" | "calendar">("list");
   const [weekOffset, setWeekOffset] = useState(0);
   // List-view-only, deliberately not persisted anywhere — a plain filter on
   // what's already loaded, reset on refresh/navigation by design.

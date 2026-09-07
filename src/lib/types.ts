@@ -51,6 +51,7 @@ export type VotingCycle = {
   created_at: string;
   published_at: string | null;
   closed_at: string | null;
+  shopping_list_meal_count: number;
 };
 
 export type ShortlistEntry = {

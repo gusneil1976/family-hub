@@ -5,6 +5,7 @@ import type { Ingredient, Meal, VotingCycle } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
 import { MealImage } from "../meals/meal-image";
 import { ShoppingChecklist, type ChecklistIngredient } from "./checklist";
+import { MealCountSelect } from "./meal-count-select";
 
 type ShortlistRow = { meal_id: string; meals: Meal };
 type Voter = { name: string; rank: number };
@@ -148,17 +149,18 @@ export default async function ResultsPage() {
   const topThree = totalVotes > 0 ? ranked.slice(0, 3) : ranked;
   const rest = totalVotes > 0 ? ranked.slice(3) : [];
 
-  // Cooking two dishes, so the shopping list covers whichever two meals are
-  // currently ranked highest — recomputed on every load, since standing can
-  // shift until voting closes.
-  const topTwo = totalVotes > 0 ? ranked.slice(0, 2) : [];
-  const topTwoMealIds = topTwo.map((e) => e.meal_id);
+  // The shopping list covers however many top-ranked meals the admin has
+  // set (default 2) — recomputed on every load, since standing can shift
+  // until voting closes.
+  const mealCount = cycle.shopping_list_meal_count;
+  const topN = totalVotes > 0 ? ranked.slice(0, mealCount) : [];
+  const topMealIds = topN.map((e) => e.meal_id);
 
-  const { data: ingredients } = topTwoMealIds.length
+  const { data: ingredients } = topMealIds.length
     ? await supabase
         .from("ingredients")
         .select("*")
-        .in("meal_id", topTwoMealIds)
+        .in("meal_id", topMealIds)
         .order("sort_order")
         .returns<Ingredient[]>()
     : { data: null };
@@ -203,7 +205,7 @@ export default async function ResultsPage() {
   const checklistReadOnlyReason = !profile?.has_shopping_list_access
     ? "Only specific family members can tick these off."
     : cycle.status !== "closed"
-      ? "Unlocks once voting closes — the top 2 may still change until then."
+      ? `Unlocks once voting closes — the top ${mealCount} may still change until then.`
       : undefined;
 
   return (
@@ -257,6 +259,19 @@ export default async function ResultsPage() {
 
           {checklistItems.length > 0 && (
             <div className="mt-6">
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-neutral-600">
+                <span>Shopping list covers the top</span>
+                {profile?.is_admin ? (
+                  <MealCountSelect
+                    cycleId={cycle.id}
+                    value={mealCount}
+                    max={ranked.length}
+                  />
+                ) : (
+                  <span className="font-semibold">{mealCount}</span>
+                )}
+                <span>meal{mealCount === 1 ? "" : "s"}.</span>
+              </div>
               <ShoppingChecklist
                 items={checklistItems}
                 readOnly={!canToggleChecklist}

@@ -7,6 +7,7 @@ import { MealImage } from "../meals/meal-image";
 import { ShoppingChecklist, type ChecklistIngredient } from "./checklist";
 
 type ShortlistRow = { meal_id: string; meals: Meal };
+type Voter = { name: string; rank: number };
 
 const RANK_LABELS = ["1st", "2nd", "3rd"];
 const RANK_STYLES = ["bg-accent", "bg-neutral-500", "bg-amber-700"];
@@ -14,12 +15,14 @@ const RANK_STYLES = ["bg-accent", "bg-neutral-500", "bg-amber-700"];
 function MealGrid({
   entries,
   points,
+  votersByMeal,
   totalVotes,
   dimmed,
   rankOffset,
 }: {
   entries: ShortlistRow[];
   points: Map<string, number>;
+  votersByMeal: Map<string, Voter[]>;
   totalVotes: number;
   dimmed?: boolean;
   rankOffset: number;
@@ -31,6 +34,7 @@ function MealGrid({
       {entries.map((entry, i) => {
         const meal = entry.meals;
         const pointTotal = points.get(entry.meal_id) ?? 0;
+        const voters = votersByMeal.get(entry.meal_id) ?? [];
         const globalRank = rankOffset + i;
         return (
           <Link
@@ -63,6 +67,16 @@ function MealGrid({
               <p className="mt-0.5 text-sm text-neutral-500">
                 {pointTotal} point{pointTotal === 1 ? "" : "s"}
               </p>
+              {voters.length > 0 && (
+                <p className="mt-1 text-xs text-neutral-500">
+                  {voters.map((v, vi) => (
+                    <span key={vi}>
+                      {vi > 0 && " · "}
+                      {RANK_LABELS[v.rank - 1] ?? `${v.rank}th`} {v.name}
+                    </span>
+                  ))}
+                </p>
+              )}
             </div>
           </Link>
         );
@@ -103,16 +117,27 @@ export default async function ResultsPage() {
 
   const { data: votes } = await supabase
     .from("votes")
-    .select("meal_id, rank")
-    .eq("voting_cycle_id", cycle.id);
+    .select("meal_id, rank, voter:profiles(display_name)")
+    .eq("voting_cycle_id", cycle.id)
+    .returns<
+      { meal_id: string; rank: number; voter: { display_name: string | null } | null }[]
+    >();
 
   // 1st choice = 3 points, 2nd = 2, 3rd = 1.
   const POINTS_BY_RANK: Record<number, number> = { 1: 3, 2: 2, 3: 1 };
   const points = new Map<string, number>();
+  const votersByMeal = new Map<string, Voter[]>();
   votes?.forEach((v) => {
     const weight = POINTS_BY_RANK[v.rank] ?? 0;
     points.set(v.meal_id, (points.get(v.meal_id) ?? 0) + weight);
+
+    const list = votersByMeal.get(v.meal_id) ?? [];
+    list.push({ name: v.voter?.display_name ?? "Someone", rank: v.rank });
+    votersByMeal.set(v.meal_id, list);
   });
+  for (const list of votersByMeal.values()) {
+    list.sort((a, b) => a.rank - b.rank);
+  }
 
   const totalVotes = votes?.length ?? 0;
 
@@ -208,6 +233,7 @@ export default async function ResultsPage() {
           <MealGrid
             entries={topThree}
             points={points}
+            votersByMeal={votersByMeal}
             totalVotes={totalVotes}
             rankOffset={0}
           />
@@ -221,6 +247,7 @@ export default async function ResultsPage() {
               <MealGrid
                 entries={rest}
                 points={points}
+                votersByMeal={votersByMeal}
                 totalVotes={totalVotes}
                 rankOffset={3}
                 dimmed

@@ -93,6 +93,7 @@ export type Task = {
   is_active: boolean;
   completed_at: string | null;
   reminder_sent_at: string | null;
+  is_time_sensitive: boolean;
   created_at: string;
 };
 

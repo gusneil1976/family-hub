@@ -66,6 +66,7 @@ export async function updateTask(
   const recurrenceValueRaw = formData.get("recurrence_value");
   const recurrenceValue =
     recurrenceUnit && recurrenceValueRaw ? Number(recurrenceValueRaw) : null;
+  const isTimeSensitive = formData.get("is_time_sensitive") === "on";
 
   const { error } = await supabase
     .from("tasks")
@@ -77,6 +78,7 @@ export async function updateTask(
       due_time: dueTime,
       recurrence_unit: recurrenceUnit,
       recurrence_value: recurrenceValue,
+      is_time_sensitive: isTimeSensitive,
       reminder_sent_at: null,
     })
     .eq("id", taskId);

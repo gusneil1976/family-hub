@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { addInterval, toDateInputValue } from "@/app/(app)/house-tasks/date-utils";
 import { createResendClient, REMINDER_FROM_ADDRESS } from "@/lib/resend";
 import type { Task } from "@/lib/types";
 
@@ -95,31 +96,80 @@ export async function GET(request: Request) {
     }
   }
 
-  // Roll forward any task still incomplete after its due date, so the
-  // board always shows it as "due today" instead of letting stale overdue
-  // dates pile up — clearing reminder_sent_at too, so a task that gets
-  // missed again after rolling forward can trigger a fresh reminder above
+  // Anything still incomplete after its due date needs handling — most
+  // tasks just roll forward to today so the board keeps showing them as
+  // due. Time-sensitive tasks (e.g. an alternating chore between two kids)
+  // do the opposite: missing the day is treated as a miss, not a delay —
+  // auto-marked not completed (same points deduction as the manual
+  // button) and, if recurring, advanced to its next scheduled date
+  // computed from the original due date, so a single missed turn can't
+  // permanently desync the alternation. reminder_sent_at is cleared
+  // either way, so a task missed again can trigger a fresh reminder above
   // on a later run instead of staying silent forever.
   const today = londonToday();
   const { data: stale } = await admin
     .from("tasks")
-    .select("id")
+    .select("*")
     .eq("is_active", true)
     .is("completed_at", null)
     .not("due_date", "is", null)
-    .lt("due_date", today);
+    .lt("due_date", today)
+    .returns<Task[]>();
 
   let rolledCount = 0;
+  let autoMissedCount = 0;
+
   if (stale && stale.length > 0) {
-    await admin
-      .from("tasks")
-      .update({ due_date: today, reminder_sent_at: null })
-      .in(
-        "id",
-        stale.map((t) => t.id),
-      );
-    rolledCount = stale.length;
+    const toRollForward = stale.filter((t) => !t.is_time_sensitive);
+    const toAutoMiss = stale.filter((t) => t.is_time_sensitive);
+
+    if (toRollForward.length > 0) {
+      await admin
+        .from("tasks")
+        .update({ due_date: today, reminder_sent_at: null })
+        .in(
+          "id",
+          toRollForward.map((t) => t.id),
+        );
+      rolledCount = toRollForward.length;
+    }
+
+    for (const task of toAutoMiss) {
+      await admin.from("task_completions").insert({
+        task_id: task.id,
+        completed_by: task.assigned_to,
+        points: -task.points,
+      });
+
+      const isRecurring = !!task.recurrence_unit && !!task.recurrence_value;
+      if (isRecurring) {
+        const nextDue = toDateInputValue(
+          addInterval(
+            new Date(task.due_date!),
+            task.recurrence_unit!,
+            task.recurrence_value!,
+          ),
+        );
+        await admin
+          .from("tasks")
+          .update({ due_date: nextDue, reminder_sent_at: null })
+          .eq("id", task.id);
+      } else {
+        await admin
+          .from("tasks")
+          .update({
+            completed_at: new Date().toISOString(),
+            reminder_sent_at: null,
+          })
+          .eq("id", task.id);
+      }
+      autoMissedCount++;
+    }
   }
 
-  return NextResponse.json({ sent: sentCount, rolledForward: rolledCount });
+  return NextResponse.json({
+    sent: sentCount,
+    rolledForward: rolledCount,
+    autoMissed: autoMissedCount,
+  });
 }

@@ -225,6 +225,25 @@ export function TaskForm({
         <input type="hidden" name="recurrence_value" value={finalValue} />
       </fieldset>
 
+      <label className="flex items-start gap-2 text-sm text-neutral-700">
+        <input
+          type="checkbox"
+          name="is_time_sensitive"
+          defaultChecked={task?.is_time_sensitive ?? false}
+          className="mt-0.5 h-4 w-4"
+        />
+        <span>
+          Time-sensitive
+          <span className="block text-xs text-neutral-500">
+            If not done by the end of its due day, this gets marked not
+            completed and moves straight to its next scheduled date, instead
+            of rolling forward to today. Use this for things like an
+            alternating chore, where staying on the fixed schedule matters
+            more than getting done eventually.
+          </span>
+        </span>
+      </label>
+
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
 
       <button

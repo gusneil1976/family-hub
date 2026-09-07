@@ -88,6 +88,9 @@ function TaskGroup({
                 {!task.points_approved && (
                   <Badge variant="warning">Pending approval</Badge>
                 )}
+                {task.is_time_sensitive && (
+                  <Badge variant="neutral">Time-sensitive</Badge>
+                )}
               </div>
               <p className="mt-0.5 text-xs text-neutral-500">
                 {task.assignee?.display_name && (

@@ -90,7 +90,19 @@ export async function updateTask(
   redirect("/house-tasks");
 }
 
-export async function deleteTask(taskId: string) {
+// Returns { error } instead of throwing on failure — a thrown Error's
+// message gets stripped to an opaque digest once it crosses the Server
+// Action boundary in a production build (this only shows up on the
+// deployed site, never in local dev, which is why it's easy to miss).
+// redirect() is exempt from that stripping (Next recognizes its digest
+// specially), which is also why success redirects from here rather than
+// leaving navigation to the caller — this page's own data (the task just
+// deleted) no longer exists, so if Next re-rendered this route as part of
+// the action response before the client could navigate away, its data
+// fetch would 404 mid-flight.
+export async function deleteTask(
+  taskId: string,
+): Promise<{ error: string } | undefined> {
   const { supabase, user, profile } = await requireUser();
 
   const { data: task } = await supabase
@@ -100,27 +112,22 @@ export async function deleteTask(taskId: string) {
     .single<Pick<Task, "created_by">>();
 
   if (!task) {
-    throw new Error("Task not found.");
+    return { error: "Task not found." };
   }
   if (!canManage(task, user.id, profile)) {
-    throw new Error("You can't delete this task.");
+    return { error: "You can't delete this task." };
   }
 
   const { error } = await supabase.from("tasks").delete().eq("id", taskId);
   if (error) {
-    throw new Error(
-      error.message.toLowerCase().includes("foreign key")
+    return {
+      error: error.message.toLowerCase().includes("foreign key")
         ? "Can't delete — this task has completion history. Deactivate it instead."
         : error.message,
-    );
+    };
   }
 
   revalidatePath("/house-tasks");
-  // Redirects from here rather than leaving navigation to the caller —
-  // this page's own data (the task just deleted) no longer exists, so if
-  // Next re-rendered this route as part of the action response before the
-  // client could navigate away, its data fetch would 404 mid-flight and
-  // surface as an opaque render error instead of a clean redirect.
   redirect("/house-tasks");
 }
 

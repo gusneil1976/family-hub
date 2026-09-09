@@ -17,15 +17,14 @@ export function DeleteTaskButton({
   const [open, setOpen] = useState(false);
 
   // deleteTask redirects to /house-tasks itself on success, so there's
-  // nothing to do here in that case — only a thrown error (not found,
-  // can't delete, has completion history) reaches this catch.
+  // nothing to do here in that case — it only ever returns on failure
+  // (not found, can't delete, has completion history).
   function doDelete() {
     setError(null);
     startTransition(async () => {
-      try {
-        await deleteTask(taskId);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to delete.");
+      const result = await deleteTask(taskId);
+      if (result?.error) {
+        setError(result.error);
       }
     });
   }

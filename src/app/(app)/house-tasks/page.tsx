@@ -4,6 +4,7 @@ import type { Profile, Task } from "@/lib/types";
 import { PageHeader, StatTile, StatTileRow } from "@/components/ui";
 import { getUpcomingBakingSteps } from "../curing/get-due-steps";
 import { KIOSK_BUTTON_PRIMARY } from "../kiosk-styles";
+import { QuickAddTask } from "./quick-add-task";
 import { TaskBoard } from "./task-board";
 import { isOverdue, startOfWeek } from "./date-utils";
 
@@ -115,6 +116,8 @@ export default async function HouseTasksPage() {
           </Link>
         }
       />
+
+      {!profile?.is_kiosk && <QuickAddTask />}
 
       <StatTileRow>
         <StatTile emphasize label="My tasks" value={myTasks.length} />

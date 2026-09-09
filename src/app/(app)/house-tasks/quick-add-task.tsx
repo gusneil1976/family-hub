@@ -5,10 +5,14 @@ import { useRef } from "react";
 // Presentational only — TasksWithQuickAdd owns the actual submit action
 // (composed with an optimistic list update) so the new task can appear in
 // the list immediately, rather than this component waiting on createTask's
-// round trip itself. The input clears the instant it's submitted too,
-// rather than waiting on that same round trip — form.reset() runs
-// synchronously in onSubmit, before the (async) action prop even starts,
-// so it doesn't have to wait for anything.
+// round trip itself.
+//
+// Submission is handled by hand (preventDefault + reading FormData
+// ourselves) rather than the form's native `action` prop, specifically so
+// the input can be cleared right away without it: resetting the form
+// before React gets around to capturing its FormData for a native action
+// submission sends an empty title through instead of what was typed —
+// capturing the FormData ourselves first guarantees the order.
 export function QuickAddTask({
   action,
   error,
@@ -21,8 +25,12 @@ export function QuickAddTask({
   return (
     <form
       ref={formRef}
-      action={action}
-      onSubmit={() => formRef.current?.reset()}
+      onSubmit={(e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        e.currentTarget.reset();
+        action(formData);
+      }}
       className="mb-4 flex items-start gap-2"
     >
       <div className="flex-1">

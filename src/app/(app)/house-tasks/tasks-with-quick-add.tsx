@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useOptimistic } from "react";
+import { useActionState, useOptimistic, useTransition } from "react";
 import type { Task } from "@/lib/types";
 import type { DueBakingStep } from "../curing/get-due-steps";
 import { createTask } from "./new/actions";
@@ -64,11 +64,17 @@ export function TasksWithQuickAdd({
   );
 
   const [state, formAction] = useActionState(createTask, undefined);
+  const [, startTransition] = useTransition();
 
-  async function quickAddAction(formData: FormData) {
+  // QuickAddTask calls this directly (not via the form's native `action`
+  // prop), so nothing wraps it in a transition automatically — addOptimistic
+  // calls require one explicitly, hence startTransition here.
+  function quickAddAction(formData: FormData) {
     const title = String(formData.get("title") ?? "").trim();
-    if (title) addOptimisticTask(title);
-    await formAction(formData);
+    startTransition(async () => {
+      if (title) addOptimisticTask(title);
+      await formAction(formData);
+    });
   }
 
   return (

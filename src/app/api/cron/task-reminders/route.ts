@@ -124,13 +124,34 @@ export async function GET(request: Request) {
     const toAutoMiss = stale.filter((t) => t.is_time_sensitive);
 
     if (toRollForward.length > 0) {
-      await admin
-        .from("tasks")
-        .update({ due_date: today, reminder_sent_at: null })
-        .in(
-          "id",
-          toRollForward.map((t) => t.id),
-        );
+      // original_due_date is only set the *first* time a task rolls over —
+      // captured from its own due_date before this update overwrites it —
+      // so a task missed several days running keeps showing when it was
+      // first due, not yesterday's rolled-forward date.
+      const firstRollover = toRollForward.filter((t) => !t.original_due_date);
+      const alreadyRolled = toRollForward.filter((t) => t.original_due_date);
+
+      for (const task of firstRollover) {
+        await admin
+          .from("tasks")
+          .update({
+            due_date: today,
+            original_due_date: task.due_date,
+            reminder_sent_at: null,
+          })
+          .eq("id", task.id);
+      }
+
+      if (alreadyRolled.length > 0) {
+        await admin
+          .from("tasks")
+          .update({ due_date: today, reminder_sent_at: null })
+          .in(
+            "id",
+            alreadyRolled.map((t) => t.id),
+          );
+      }
+
       rolledCount = toRollForward.length;
     }
 
@@ -153,13 +174,18 @@ export async function GET(request: Request) {
         );
         await admin
           .from("tasks")
-          .update({ due_date: nextDue, reminder_sent_at: null })
+          .update({
+            due_date: nextDue,
+            original_due_date: null,
+            reminder_sent_at: null,
+          })
           .eq("id", task.id);
       } else {
         await admin
           .from("tasks")
           .update({
             completed_at: new Date().toISOString(),
+            original_due_date: null,
             reminder_sent_at: null,
           })
           .eq("id", task.id);

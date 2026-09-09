@@ -36,9 +36,13 @@ export async function completeTask(taskId: string, performedBy?: string) {
   const update: {
     completed_at: string | null;
     due_date?: string | null;
+    original_due_date: null;
     reminder_sent_at: null;
   } = {
     completed_at: isRecurring ? null : new Date().toISOString(),
+    // Clears whatever the roll-forward cron may have set — this task is
+    // moving on to a fresh cycle (or is done), not sitting overdue anymore.
+    original_due_date: null,
     reminder_sent_at: null,
   };
 
@@ -103,9 +107,11 @@ export async function markNotCompleted(taskId: string, close: boolean) {
     const update: {
       completed_at: string | null;
       due_date?: string | null;
+      original_due_date: null;
       reminder_sent_at: null;
     } = {
       completed_at: isRecurring ? null : new Date().toISOString(),
+      original_due_date: null,
       reminder_sent_at: null,
     };
 

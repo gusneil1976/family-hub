@@ -13,6 +13,7 @@ import { NotCompletedButton } from "./not-completed-button";
 import {
   formatDueDateTime,
   formatRecurrence,
+  formatShortDate,
   isOverdue,
   normalizeTime,
   startOfWeek,
@@ -101,6 +102,12 @@ function TaskGroup({
                   <span className={overdue ? "text-red-600" : ""}>
                     {" "}
                     · Due {dueLabel}
+                  </span>
+                )}
+                {task.original_due_date && (
+                  <span className="text-amber-600">
+                    {" "}
+                    · Originally due {formatShortDate(task.original_due_date)}
                   </span>
                 )}
               </p>

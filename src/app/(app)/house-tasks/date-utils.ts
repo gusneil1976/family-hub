@@ -76,3 +76,14 @@ export function formatDueDateTime(
   const time = dueTime ? normalizeTime(dueTime) : DEFAULT_DUE_TIME;
   return `${dueDate} at ${time}`;
 }
+
+// Parses "YYYY-MM-DD" into local date components rather than through
+// `new Date(dateStr)` (which parses as UTC midnight) — avoids the day
+// shifting back a day for a viewer west of UTC.
+export function formatShortDate(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
+}

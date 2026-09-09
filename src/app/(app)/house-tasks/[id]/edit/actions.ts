@@ -33,9 +33,9 @@ export async function updateTask(
 
   const { data: task } = await supabase
     .from("tasks")
-    .select("created_by")
+    .select("created_by, due_date, original_due_date")
     .eq("id", taskId)
-    .single<Pick<Task, "created_by">>();
+    .single<Pick<Task, "created_by" | "due_date" | "original_due_date">>();
 
   if (!task) {
     return { error: "Task not found." };
@@ -68,6 +68,10 @@ export async function updateTask(
     recurrenceUnit && recurrenceValueRaw ? Number(recurrenceValueRaw) : null;
   const isTimeSensitive = formData.get("is_time_sensitive") === "on";
 
+  // A deliberate due-date change here overrides whatever the roll-forward
+  // cron had noted as the original date — this new date is the real one now.
+  const dueDateChanged = dueDate !== task.due_date;
+
   const { error } = await supabase
     .from("tasks")
     .update({
@@ -76,6 +80,7 @@ export async function updateTask(
       assigned_to: assignedTo,
       due_date: dueDate,
       due_time: dueTime,
+      original_due_date: dueDateChanged ? null : task.original_due_date,
       recurrence_unit: recurrenceUnit,
       recurrence_value: recurrenceValue,
       is_time_sensitive: isTimeSensitive,

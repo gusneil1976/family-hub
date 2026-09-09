@@ -88,6 +88,7 @@ export type Task = {
   assigned_to: string;
   due_date: string | null;
   due_time: string | null;
+  original_due_date: string | null;
   recurrence_unit: RecurrenceUnit | null;
   recurrence_value: number | null;
   is_active: boolean;

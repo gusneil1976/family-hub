@@ -102,6 +102,7 @@ export type TaskCompletion = {
   task_id: string;
   completed_by: string;
   points: number;
+  closed_task: boolean;
   completed_at: string;
 };
 

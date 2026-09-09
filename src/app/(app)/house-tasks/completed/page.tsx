@@ -6,6 +6,7 @@ import { UncompleteButton } from "./uncomplete-button";
 type CompletionRow = {
   id: string;
   points: number;
+  closed_task: boolean;
   completed_at: string;
   tasks: { title: string } | null;
   profiles: { display_name: string | null } | null;
@@ -40,7 +41,9 @@ function CompletionGroup({
                   </span>
                   <span className="ml-2 text-neutral-500">
                     {missed
-                      ? `not completed — ${c.profiles?.display_name ?? "someone"}`
+                      ? `not completed — ${c.profiles?.display_name ?? "someone"}${
+                          c.closed_task ? " (closed)" : ""
+                        }`
                       : `by ${c.profiles?.display_name ?? "someone"}`}
                   </span>
                 </span>
@@ -66,7 +69,9 @@ export default async function CompletedPage() {
 
   const { data: completions } = await supabase
     .from("task_completions")
-    .select("id, points, completed_at, tasks(title), profiles(display_name)")
+    .select(
+      "id, points, closed_task, completed_at, tasks(title), profiles(display_name)",
+    )
     .gte("completed_at", monthStart.toISOString())
     .order("completed_at", { ascending: false })
     .returns<CompletionRow[]>();

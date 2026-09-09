@@ -65,12 +65,17 @@ export async function completeTask(taskId: string, performedBy?: string) {
   revalidatePath("/house-tasks/scoreboard");
 }
 
-// Deducts a task's points from whoever it's assigned to, without touching
-// the task itself — it stays pending, same due date, so it can still be
-// completed (or marked not completed again) later. Unlike completeTask,
-// this always debits the assignee specifically, not whoever clicks the
-// button, so there's no "who" picker even on kiosk.
-export async function markNotCompleted(taskId: string) {
+// Deducts a task's points from whoever it's assigned to. Unlike
+// completeTask, this always debits the assignee specifically, not whoever
+// clicks the button, so there's no "who" picker even on kiosk.
+//
+// `close` chooses what happens to the task itself: false (leave open)
+// keeps it exactly as it was — same due date, still pending, in case
+// someone else can still get to it today. true (close it out) treats the
+// moment as passed, same as the time-sensitive auto-miss cron
+// (src/app/api/cron/task-reminders/route.ts): a recurring task advances
+// to its next occurrence from its own due date, a one-off is marked done.
+export async function markNotCompleted(taskId: string, close: boolean) {
   const { supabase } = await requireUser();
 
   const { data: task, error: fetchError } = await supabase
@@ -87,9 +92,40 @@ export async function markNotCompleted(taskId: string) {
     task_id: task.id,
     completed_by: task.assigned_to,
     points: -task.points,
+    closed_task: close,
   });
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (close) {
+    const isRecurring = !!task.recurrence_unit && !!task.recurrence_value;
+    const update: {
+      completed_at: string | null;
+      due_date?: string | null;
+      reminder_sent_at: null;
+    } = {
+      completed_at: isRecurring ? null : new Date().toISOString(),
+      reminder_sent_at: null,
+    };
+
+    if (isRecurring && task.due_date) {
+      update.due_date = toDateInputValue(
+        addInterval(
+          new Date(task.due_date),
+          task.recurrence_unit!,
+          task.recurrence_value!,
+        ),
+      );
+    }
+
+    const { error: updateError } = await supabase
+      .from("tasks")
+      .update(update)
+      .eq("id", taskId);
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
   }
 
   revalidatePath("/house-tasks");
@@ -98,14 +134,15 @@ export async function markNotCompleted(taskId: string) {
 }
 
 // Removes a logged completion (and its points). If it's the task's most
-// recent completion, also unwinds the state change completeTask made —
-// clears completed_at for a one-off task, or rolls a recurring task's
-// due_date back by one interval — so it lands exactly where it was right
-// before that completion. An older, superseded completion just gets
-// deleted from the history/points ledger, since the task's current state
-// has already moved on and can't be safely rewound past later completions.
-// A markNotCompleted penalty (negative points) never touched the task's
-// state to begin with, so it's always just a plain delete.
+// recent completion, also unwinds the state change completeTask (or a
+// markNotCompleted with close=true) made — clears completed_at for a
+// one-off task, or rolls a recurring task's due_date back by one interval —
+// so it lands exactly where it was right before that entry. An older,
+// superseded entry just gets deleted from the history/points ledger, since
+// the task's current state has already moved on and can't be safely
+// rewound past later completions. A markNotCompleted left open
+// (closed_task false, negative points) never touched the task's state to
+// begin with, so it's always just a plain delete.
 export async function uncompleteTask(completionId: string) {
   const { supabase } = await requireUser();
 
@@ -141,7 +178,7 @@ export async function uncompleteTask(completionId: string) {
     throw new Error(deleteError.message);
   }
 
-  if (task && isLatest && completion.points >= 0) {
+  if (task && isLatest && (completion.points >= 0 || completion.closed_task)) {
     const isRecurring = !!task.recurrence_unit && !!task.recurrence_value;
     if (isRecurring) {
       if (task.due_date) {

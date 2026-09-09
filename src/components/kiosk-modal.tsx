@@ -4,7 +4,9 @@
 // Replaces window.confirm() (renders unreliably on the fridge's browser —
 // the confirm control can end up hidden or unreachable) and any ad-hoc
 // inline-expanding rows, so every kiosk interaction that needs a "are you
-// sure" or a follow-up choice looks and behaves the same way.
+// sure" or a follow-up choice looks and behaves the same way. Also reused
+// on desktop wherever a plain confirm() can't express enough choices (e.g.
+// NotCompletedButton's "leave open" vs "close it out").
 export function KioskModal({
   open,
   onClose,

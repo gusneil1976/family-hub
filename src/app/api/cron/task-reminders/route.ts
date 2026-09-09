@@ -139,6 +139,7 @@ export async function GET(request: Request) {
         task_id: task.id,
         completed_by: task.assigned_to,
         points: -task.points,
+        closed_task: true,
       });
 
       const isRecurring = !!task.recurrence_unit && !!task.recurrence_value;

@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { KioskModal } from "@/components/kiosk-modal";
 import { KIOSK_BUTTON_PRIMARY, KIOSK_BUTTON_SECONDARY } from "../../../kiosk-styles";
@@ -16,14 +15,15 @@ export function DeleteTaskButton({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const router = useRouter();
 
+  // deleteTask redirects to /house-tasks itself on success, so there's
+  // nothing to do here in that case — only a thrown error (not found,
+  // can't delete, has completion history) reaches this catch.
   function doDelete() {
     setError(null);
     startTransition(async () => {
       try {
         await deleteTask(taskId);
-        router.push("/house-tasks");
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to delete.");
       }

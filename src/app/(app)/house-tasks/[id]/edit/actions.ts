@@ -116,6 +116,12 @@ export async function deleteTask(taskId: string) {
   }
 
   revalidatePath("/house-tasks");
+  // Redirects from here rather than leaving navigation to the caller —
+  // this page's own data (the task just deleted) no longer exists, so if
+  // Next re-rendered this route as part of the action response before the
+  // client could navigate away, its data fetch would 404 mid-flight and
+  // surface as an opaque render error instead of a clean redirect.
+  redirect("/house-tasks");
 }
 
 export async function setTaskActive(taskId: string, active: boolean) {

@@ -47,10 +47,14 @@ export async function createTask(
     recurrenceUnit && recurrenceValueRaw ? Number(recurrenceValueRaw) : null;
   const isTimeSensitive = formData.get("is_time_sensitive") === "on";
 
+  // A 0-point task has nothing to approve — a completion adds 0 to the
+  // scoreboard whether or not points_approved is set, so gating it behind
+  // the approvals queue is just noise for the house-tasks admin.
   const { error } = await supabase.from("tasks").insert({
     title,
     description,
     points,
+    points_approved: points === 0,
     created_by: createdBy,
     assigned_to: assignedTo,
     due_date: dueDate,

@@ -68,13 +68,16 @@ function TaskGroup({
         );
         const overdue = isOverdue(task.due_date, task.due_time);
         const dueLabel = formatDueDateTime(task.due_date, task.due_time);
+        // Quick-add's optimistic row (see tasks-with-quick-add.tsx) — not a
+        // real task yet, so its action buttons would just fail if clicked.
+        const isPendingAdd = task.id.startsWith("optimistic-");
 
         return (
           <li
             key={task.id}
             className={`flex flex-wrap items-center justify-between ${
               isKiosk ? KIOSK_ROW : "gap-3 px-4 py-3 text-sm"
-            }`}
+            } ${isPendingAdd ? "opacity-60" : ""}`}
           >
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -113,20 +116,37 @@ function TaskGroup({
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {editableTaskIds.has(task.id) && (
-                <Link
-                  href={`/house-tasks/${task.id}/edit`}
+              {isPendingAdd ? (
+                <span
                   className={
                     isKiosk
-                      ? `text-neutral-500 hover:text-neutral-900 ${KIOSK_LINK}`
-                      : "text-sm text-neutral-500 underline hover:text-neutral-900"
+                      ? "text-base text-neutral-400"
+                      : "text-xs text-neutral-400"
                   }
                 >
-                  Edit
-                </Link>
+                  Adding…
+                </span>
+              ) : (
+                <>
+                  {editableTaskIds.has(task.id) && (
+                    <Link
+                      href={`/house-tasks/${task.id}/edit`}
+                      className={
+                        isKiosk
+                          ? `text-neutral-500 hover:text-neutral-900 ${KIOSK_LINK}`
+                          : "text-sm text-neutral-500 underline hover:text-neutral-900"
+                      }
+                    >
+                      Edit
+                    </Link>
+                  )}
+                  <NotCompletedButton taskId={task.id} isKiosk={isKiosk} />
+                  <CompleteButton
+                    taskId={task.id}
+                    kioskProfiles={kioskProfiles}
+                  />
+                </>
               )}
-              <NotCompletedButton taskId={task.id} isKiosk={isKiosk} />
-              <CompleteButton taskId={task.id} kioskProfiles={kioskProfiles} />
             </div>
           </li>
         );

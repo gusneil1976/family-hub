@@ -4,8 +4,8 @@ import type { Profile, Task } from "@/lib/types";
 import { PageHeader, StatTile, StatTileRow } from "@/components/ui";
 import { getUpcomingBakingSteps } from "../curing/get-due-steps";
 import { KIOSK_BUTTON_PRIMARY } from "../kiosk-styles";
-import { QuickAddTask } from "./quick-add-task";
 import { TaskBoard } from "./task-board";
+import { TasksWithQuickAdd } from "./tasks-with-quick-add";
 import { isOverdue, startOfWeek } from "./date-utils";
 
 type TaskRow = Task & {
@@ -117,23 +117,40 @@ export default async function HouseTasksPage() {
         }
       />
 
-      {!profile?.is_kiosk && <QuickAddTask />}
+      {profile?.is_kiosk ? (
+        <>
+          <StatTileRow>
+            <StatTile emphasize label="My tasks" value={myTasks.length} />
+            <StatTile label="Total pending" value={all.length} />
+            <StatTile label="Due this week" value={dueThisWeek} />
+            <StatTile label="Overdue" value={overdueCount} />
+          </StatTileRow>
 
-      <StatTileRow>
-        <StatTile emphasize label="My tasks" value={myTasks.length} />
-        <StatTile label="Total pending" value={all.length} />
-        <StatTile label="Due this week" value={dueThisWeek} />
-        <StatTile label="Overdue" value={overdueCount} />
-      </StatTileRow>
-
-      <TaskBoard
-        myTasks={myTasks}
-        otherTasks={otherTasks}
-        editableTaskIds={editableTaskIds}
-        bakingSteps={bakingSteps}
-        kioskProfiles={kioskProfiles ?? undefined}
-        peopleTasks={peopleTasks}
-      />
+          <TaskBoard
+            myTasks={myTasks}
+            otherTasks={otherTasks}
+            editableTaskIds={editableTaskIds}
+            bakingSteps={bakingSteps}
+            kioskProfiles={kioskProfiles ?? undefined}
+            peopleTasks={peopleTasks}
+          />
+        </>
+      ) : (
+        <TasksWithQuickAdd
+          myTasks={myTasks}
+          otherTasks={otherTasks}
+          editableTaskIds={editableTaskIds}
+          bakingSteps={bakingSteps}
+          currentUserId={user.id}
+        >
+          <StatTileRow>
+            <StatTile emphasize label="My tasks" value={myTasks.length} />
+            <StatTile label="Total pending" value={all.length} />
+            <StatTile label="Due this week" value={dueThisWeek} />
+            <StatTile label="Overdue" value={overdueCount} />
+          </StatTileRow>
+        </TasksWithQuickAdd>
+      )}
     </div>
   );
 }

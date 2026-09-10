@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { RecurrenceUnit, Task } from "@/lib/types";
 
 type ActionState = { error: string } | undefined;
@@ -33,9 +34,11 @@ export async function updateTask(
 
   const { data: task } = await supabase
     .from("tasks")
-    .select("created_by, due_date, original_due_date")
+    .select("created_by, due_date, original_due_date, points")
     .eq("id", taskId)
-    .single<Pick<Task, "created_by" | "due_date" | "original_due_date">>();
+    .single<
+      Pick<Task, "created_by" | "due_date" | "original_due_date" | "points">
+    >();
 
   if (!task) {
     return { error: "Task not found." };
@@ -90,6 +93,29 @@ export async function updateTask(
 
   if (error) {
     return { error: error.message };
+  }
+
+  // points/points_approved are locked to service-role (migration 0007) so
+  // a real value can't be self-inflated — but a task that hasn't been given
+  // one yet (points === 0, e.g. quick-added) has nothing to protect, so
+  // this lets it through here via the admin client. Setting a non-zero
+  // value puts it through the normal approval queue, same as any other
+  // newly created non-zero-point task.
+  if (task.points === 0) {
+    const pointsRaw = formData.get("points");
+    const newPoints = pointsRaw === null ? null : Number(pointsRaw);
+    if (
+      newPoints !== null &&
+      Number.isFinite(newPoints) &&
+      newPoints >= 0 &&
+      newPoints !== task.points
+    ) {
+      const admin = createAdminClient();
+      await admin
+        .from("tasks")
+        .update({ points: newPoints, points_approved: newPoints === 0 })
+        .eq("id", taskId);
+    }
   }
 
   redirect("/house-tasks");

@@ -43,6 +43,10 @@ export function KioskQuickAddTask({
     >
       <WhoPicker profiles={profiles} label="Who's adding this?" />
       <div>
+        {/* Starts at 0 points rather than the full form's default of 1, so
+            it doesn't need approving — see task-form.tsx for how points get
+            set (and approval triggered) once a real value is picked. */}
+        <input type="hidden" name="points" value="0" />
         <input
           ref={titleRef}
           name="title"

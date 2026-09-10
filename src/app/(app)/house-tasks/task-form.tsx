@@ -45,6 +45,10 @@ export function TaskForm({
   const [customValue, setCustomValue] = useState(
     String(task?.recurrence_value ?? 1),
   );
+  // Points are locked once a task has a real value (0 = not set yet, e.g.
+  // quick-added) — updateTask only honors a points change in that case, so
+  // the field reflects that rather than silently ignoring an edit here.
+  const pointsEditable = !task || task.points === 0;
 
   let finalUnit = "";
   let finalValue = "";
@@ -134,9 +138,15 @@ export function TaskForm({
             name="points"
             type="number"
             min={0}
+            disabled={!pointsEditable}
             defaultValue={task?.points ?? 1}
-            className="w-24 rounded-md border border-neutral-300 px-3 py-2 text-base focus:border-accent focus:outline-none"
+            className="w-24 rounded-md border border-neutral-300 px-3 py-2 text-base focus:border-accent focus:outline-none disabled:bg-neutral-100 disabled:text-neutral-400"
           />
+          {!pointsEditable && (
+            <p className="mt-1 text-xs text-neutral-500">
+              Locked once set.
+            </p>
+          )}
         </div>
 
         <div>

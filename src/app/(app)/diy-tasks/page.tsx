@@ -161,12 +161,19 @@ export default async function DiyTasksPage() {
       </section>
 
       {completed.length > 0 && (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold text-neutral-700">
-            Completed
-          </h2>
+        <details>
+          <summary
+            className={`mb-2 cursor-pointer select-none font-semibold text-neutral-700 ${
+              isKiosk ? "text-lg" : "text-sm"
+            }`}
+          >
+            Completed{" "}
+            <span className="font-normal text-neutral-400">
+              ({completed.length})
+            </span>
+          </summary>
           <ProjectGroups items={completed} canManage={canManage} isKiosk={isKiosk} />
-        </section>
+        </details>
       )}
     </div>
   );

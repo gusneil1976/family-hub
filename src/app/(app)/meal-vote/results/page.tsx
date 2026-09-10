@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import type { Ingredient, Meal, VotingCycle } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
 import { MealImage } from "../meals/meal-image";
-import { ShoppingChecklist, type ChecklistIngredient } from "./checklist";
+import { ShoppingChecklist, type ChecklistGroup } from "./checklist";
 import { MealCountSelect } from "./meal-count-select";
 
 type ShortlistRow = { meal_id: string; meals: Meal };
@@ -165,7 +165,7 @@ export default async function ResultsPage() {
         .returns<Ingredient[]>()
     : { data: null };
 
-  let checklistItems: ChecklistIngredient[] = [];
+  let checklistGroups: ChecklistGroup[] = [];
 
   if (ingredients?.length) {
     // Only whoever has shopping-list access seeds new rows — everyone else
@@ -187,17 +187,33 @@ export default async function ResultsPage() {
       .eq("voting_cycle_id", cycle.id);
 
     const itemByIngredient = new Map(items?.map((i) => [i.ingredient_id, i]));
-    checklistItems = ingredients.map((ing) => {
-      const item = itemByIngredient.get(ing.id);
-      return {
-        itemId: item?.id ?? ing.id,
-        ingredientId: ing.id,
-        name: ing.name,
-        quantity: ing.quantity,
-        unit: ing.unit,
-        checked: item?.checked ?? false,
-      };
-    });
+    const ingredientsByMeal = new Map<string, Ingredient[]>();
+    for (const ing of ingredients) {
+      const list = ingredientsByMeal.get(ing.meal_id) ?? [];
+      list.push(ing);
+      ingredientsByMeal.set(ing.meal_id, list);
+    }
+
+    // Grouped meal-by-meal, in the same top-N order shown above, rather
+    // than one combined list — easier to tell what's for what, especially
+    // once the list runs past a handful of items.
+    checklistGroups = topN
+      .map((entry) => ({
+        mealId: entry.meal_id,
+        mealName: entry.meals.name,
+        items: (ingredientsByMeal.get(entry.meal_id) ?? []).map((ing) => {
+          const item = itemByIngredient.get(ing.id);
+          return {
+            itemId: item?.id ?? ing.id,
+            ingredientId: ing.id,
+            name: ing.name,
+            quantity: ing.quantity,
+            unit: ing.unit,
+            checked: item?.checked ?? false,
+          };
+        }),
+      }))
+      .filter((group) => group.items.length > 0);
   }
 
   const canToggleChecklist =
@@ -257,7 +273,7 @@ export default async function ResultsPage() {
             </>
           )}
 
-          {checklistItems.length > 0 && (
+          {checklistGroups.length > 0 && (
             <div className="mt-6">
               <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-neutral-600">
                 <span>Shopping list covers the top</span>
@@ -273,7 +289,7 @@ export default async function ResultsPage() {
                 <span>meal{mealCount === 1 ? "" : "s"}.</span>
               </div>
               <ShoppingChecklist
-                items={checklistItems}
+                groups={checklistGroups}
                 readOnly={!canToggleChecklist}
                 readOnlyReason={checklistReadOnlyReason}
               />

@@ -12,21 +12,28 @@ export type ChecklistIngredient = {
   checked: boolean;
 };
 
+export type ChecklistGroup = {
+  mealId: string;
+  mealName: string;
+  items: ChecklistIngredient[];
+};
+
 function formatIngredient(item: ChecklistIngredient) {
   return [item.quantity, item.unit, item.name].filter(Boolean).join(" ");
 }
 
 export function ShoppingChecklist({
-  items,
+  groups,
   readOnly,
   readOnlyReason,
 }: {
-  items: ChecklistIngredient[];
+  groups: ChecklistGroup[];
   readOnly: boolean;
   readOnlyReason?: string;
 }) {
+  const allItems = groups.flatMap((g) => g.items);
   const [checkedMap, setCheckedMap] = useState<Record<string, boolean>>(
-    Object.fromEntries(items.map((i) => [i.itemId, i.checked])),
+    Object.fromEntries(allItems.map((i) => [i.itemId, i.checked])),
   );
   const [, startTransition] = useTransition();
 
@@ -38,7 +45,10 @@ export function ShoppingChecklist({
     });
   }
 
-  const remaining = items
+  // Kept flat and alphabetical, unlike the tick-off list above it — this
+  // one's meant to be walked round the shop with, where what it's for
+  // matters less than not missing anything or buying it twice.
+  const remaining = allItems
     .filter((i) => !checkedMap[i.itemId])
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -52,35 +62,44 @@ export function ShoppingChecklist({
         {readOnly && readOnlyReason && (
           <p className="mb-2 text-xs text-neutral-500">{readOnlyReason}</p>
         )}
-        <ul
-          className={`divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm ${
-            readOnly ? "opacity-50" : ""
-          }`}
-        >
-          {items.map((item) => (
-            <li
-              key={item.itemId}
-              className="flex min-h-12 items-center gap-3 px-4 py-3 text-sm"
-            >
-              <input
-                type="checkbox"
-                checked={checkedMap[item.itemId] ?? false}
-                disabled={readOnly}
-                onChange={(e) => toggle(item.itemId, e.target.checked)}
-                className="h-5 w-5 shrink-0 disabled:cursor-not-allowed"
-              />
-              <span
-                className={
-                  checkedMap[item.itemId]
-                    ? "text-neutral-400 line-through"
-                    : "text-neutral-900"
-                }
+        <div className="space-y-4">
+          {groups.map((group) => (
+            <div key={group.mealId}>
+              <h3 className="mb-1 text-xs font-semibold text-neutral-500">
+                {group.mealName}
+              </h3>
+              <ul
+                className={`divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm ${
+                  readOnly ? "opacity-50" : ""
+                }`}
               >
-                {formatIngredient(item)}
-              </span>
-            </li>
+                {group.items.map((item) => (
+                  <li
+                    key={item.itemId}
+                    className="flex min-h-12 items-center gap-3 px-4 py-3 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checkedMap[item.itemId] ?? false}
+                      disabled={readOnly}
+                      onChange={(e) => toggle(item.itemId, e.target.checked)}
+                      className="h-5 w-5 shrink-0 disabled:cursor-not-allowed"
+                    />
+                    <span
+                      className={
+                        checkedMap[item.itemId]
+                          ? "text-neutral-400 line-through"
+                          : "text-neutral-900"
+                      }
+                    >
+                      {formatIngredient(item)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       </section>
 
       <section>

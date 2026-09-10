@@ -4,13 +4,18 @@ import { useMemo, useTransition } from "react";
 import { completeStepAndRepeat, toggleStepComplete } from "../curing/[id]/actions";
 import type { DueBakingStep } from "../curing/get-due-steps";
 
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 function dateKey(d: Date) {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+// `days` is a rolling 7-day window from today, not a Monday-anchored week —
+// so this reads the weekday off each date rather than a fixed Mon..Sun
+// position per column.
+function weekdayLabel(d: Date): string {
+  return d.toLocaleDateString("en-GB", { weekday: "short" });
 }
 
 function StepCard({ step }: { step: DueBakingStep }) {
@@ -218,7 +223,7 @@ export function BakingWeeklyCalendar({
       {(() => {
         const grid = (
           <div className="grid min-w-[770px] grid-cols-7 gap-2">
-            {days.map((day, i) => {
+            {days.map((day) => {
               const key = dateKey(day);
               const isToday = key === todayKey;
               const dayItems = byDay.get(key) ?? [];
@@ -231,7 +236,7 @@ export function BakingWeeklyCalendar({
                         : "bg-neutral-100 text-neutral-600"
                     }`}
                   >
-                    {WEEKDAY_LABELS[i]} {day.getDate()}
+                    {weekdayLabel(day)} {day.getDate()}
                   </div>
                   <div className="space-y-2">
                     {dayItems.length === 0 ? (

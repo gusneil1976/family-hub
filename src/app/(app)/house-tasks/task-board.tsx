@@ -16,7 +16,6 @@ import {
   formatShortDate,
   isOverdue,
   normalizeTime,
-  startOfWeek,
 } from "./date-utils";
 
 type TaskRow = Task & {
@@ -28,8 +27,6 @@ type PersonTasks = {
   tasks: TaskRow[];
 };
 
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 // Local date components, not toISOString() — that's UTC, which in BST
 // (UTC+1) shifts local midnight back to the previous day and misaligns
 // every column by one.
@@ -38,6 +35,13 @@ function dateKey(d: Date) {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+// The calendar's columns are a rolling 7-day window from today, not a
+// Monday-anchored week — so this reads the weekday off each date rather
+// than assuming a fixed Mon..Sun position per column.
+function weekdayLabel(d: Date): string {
+  return d.toLocaleDateString("en-GB", { weekday: "short" });
 }
 
 function TaskGroup({
@@ -233,7 +237,7 @@ function WeeklyCalendar({
     <div>
       <h2 className="mb-2 text-sm font-semibold text-neutral-700">{label}</h2>
       <div className="grid min-w-[770px] grid-cols-7 gap-2">
-        {days.map((day, i) => {
+        {days.map((day) => {
           const key = dateKey(day);
           const isToday = key === todayKey;
           const dayTasks = byDay.get(key) ?? [];
@@ -246,7 +250,7 @@ function WeeklyCalendar({
                     : "bg-neutral-100 text-neutral-600"
                 }`}
               >
-                {WEEKDAY_LABELS[i]} {day.getDate()}
+                {weekdayLabel(day)} {day.getDate()}
               </div>
               <div className="space-y-2">
                 {dayTasks.length === 0 ? (
@@ -337,7 +341,7 @@ function AgendaView({
 
   return (
     <div className="space-y-6">
-      {days.map((day, i) => {
+      {days.map((day) => {
         const key = dateKey(day);
         const items = byDay.get(key) ?? [];
         if (items.length === 0) return null;
@@ -351,7 +355,7 @@ function AgendaView({
                   : "bg-neutral-100 text-neutral-600"
               }`}
             >
-              {WEEKDAY_LABELS[i]} {day.getDate()}
+              {weekdayLabel(day)} {day.getDate()}
               {isToday && <span>· Today</span>}
             </div>
             <TaskGroup
@@ -411,8 +415,14 @@ export function TaskBoard({
     todayOnly ? items.filter((t) => t.due_date === todayKey) : items;
   const filterBakingToday = (steps: DueBakingStep[]) =>
     todayOnly ? steps.filter((s) => s.due_date === todayKey) : steps;
+  // Anchored on today rather than the calendar week's Monday — overdue
+  // tasks always roll forward to today now (see the daily rollover cron),
+  // so there's rarely anything useful behind today's column; a rolling
+  // 7-day window keeps what's actually coming up in view instead of
+  // jumping back to Monday.
   const weekStart = useMemo(() => {
-    const d = startOfWeek(new Date());
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() + weekOffset * 7);
     return d;
   }, [weekOffset]);

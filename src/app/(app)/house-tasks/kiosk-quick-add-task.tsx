@@ -1,9 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useRef } from "react";
 import type { Profile } from "@/lib/types";
 import { WhoPicker } from "@/components/who-picker";
-import { createTask } from "./new/actions";
 import { KIOSK_BUTTON_PRIMARY } from "../kiosk-styles";
 
 // Kiosk's version of the desktop quick-add box (quick-add-task.tsx) — same
@@ -11,32 +10,53 @@ import { KIOSK_BUTTON_PRIMARY } from "../kiosk-styles";
 // allocation) filled in later via Edit — but needs a "who's adding this"
 // picker, since the shared kiosk login has no personal identity of its own
 // for createTask to credit it to, and kiosk-sized touch targets throughout.
-// Simpler than the desktop version too: no optimistic instant-add, since
-// that was built around the desktop page's plain myTasks/otherTasks split,
-// not kiosk's per-person grouping.
-export function KioskQuickAddTask({ profiles }: { profiles: Profile[] }) {
-  const [state, formAction, pending] = useActionState(createTask, undefined);
+//
+// Presentational only, same as the desktop version — KioskTasksWithQuickAdd
+// owns the actual submit action (composed with an optimistic update to the
+// right person's list) so the new task can appear immediately instead of
+// waiting on createTask's real round trip. Submission is handled by hand
+// (preventDefault + reading FormData ourselves) so the title can be
+// cleared right away without racing React's own capture of it for the
+// action — see quick-add-task.tsx for why that matters. The picked person
+// deliberately isn't cleared: a run of quick-adds is usually all the same
+// person, so leaving it selected saves a re-tap each time.
+export function KioskQuickAddTask({
+  profiles,
+  action,
+  error,
+}: {
+  profiles: Profile[];
+  action: (formData: FormData) => void;
+  error?: string;
+}) {
+  const titleRef = useRef<HTMLInputElement>(null);
 
   return (
-    <form action={formAction} className="mb-6 space-y-4">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        if (titleRef.current) titleRef.current.value = "";
+        action(formData);
+      }}
+      className="mb-6 space-y-4"
+    >
       <WhoPicker profiles={profiles} label="Who's adding this?" />
       <div>
         <input
+          ref={titleRef}
           name="title"
           required
           placeholder="Quick add a task…"
           className="w-full rounded-xl border-2 border-neutral-300 px-4 py-3 text-lg focus:border-accent focus:outline-none"
         />
-        {state?.error && (
-          <p className="mt-1 text-sm text-red-600">{state.error}</p>
-        )}
+        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
       </div>
       <button
         type="submit"
-        disabled={pending}
-        className={`border-2 border-accent bg-accent text-accent-foreground hover:bg-accent-hover disabled:opacity-50 ${KIOSK_BUTTON_PRIMARY}`}
+        className={`border-2 border-accent bg-accent text-accent-foreground hover:bg-accent-hover ${KIOSK_BUTTON_PRIMARY}`}
       >
-        {pending ? "Adding…" : "Add"}
+        Add
       </button>
     </form>
   );

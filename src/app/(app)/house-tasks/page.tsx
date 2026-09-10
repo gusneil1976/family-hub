@@ -4,8 +4,7 @@ import type { Profile, Task } from "@/lib/types";
 import { PageHeader, StatTile, StatTileRow } from "@/components/ui";
 import { getUpcomingBakingSteps } from "../curing/get-due-steps";
 import { KIOSK_BUTTON_PRIMARY } from "../kiosk-styles";
-import { KioskQuickAddTask } from "./kiosk-quick-add-task";
-import { TaskBoard } from "./task-board";
+import { KioskTasksWithQuickAdd } from "./kiosk-tasks-with-quick-add";
 import { TasksWithQuickAdd } from "./tasks-with-quick-add";
 import { isOverdue, startOfWeek } from "./date-utils";
 
@@ -119,25 +118,21 @@ export default async function HouseTasksPage() {
       />
 
       {profile?.is_kiosk ? (
-        <>
-          <KioskQuickAddTask profiles={kioskProfiles ?? []} />
-
+        <KioskTasksWithQuickAdd
+          myTasks={myTasks}
+          otherTasks={otherTasks}
+          editableTaskIds={editableTaskIds}
+          bakingSteps={bakingSteps}
+          kioskProfiles={kioskProfiles ?? []}
+          peopleTasks={peopleTasks ?? []}
+        >
           <StatTileRow>
             <StatTile emphasize label="My tasks" value={myTasks.length} />
             <StatTile label="Total pending" value={all.length} />
             <StatTile label="Due this week" value={dueThisWeek} />
             <StatTile label="Overdue" value={overdueCount} />
           </StatTileRow>
-
-          <TaskBoard
-            myTasks={myTasks}
-            otherTasks={otherTasks}
-            editableTaskIds={editableTaskIds}
-            bakingSteps={bakingSteps}
-            kioskProfiles={kioskProfiles ?? undefined}
-            peopleTasks={peopleTasks}
-          />
-        </>
+        </KioskTasksWithQuickAdd>
       ) : (
         <TasksWithQuickAdd
           myTasks={myTasks}

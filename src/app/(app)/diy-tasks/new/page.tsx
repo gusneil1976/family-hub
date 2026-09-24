@@ -1,30 +1,23 @@
-import { requireUser } from "@/lib/auth";
-import type { Profile } from "@/lib/types";
+"use client";
+
+import { useMe } from "@/lib/client/me";
+import { useSyncedAction } from "@/lib/client/save";
+import Loading from "../../loading";
+import { useFamily } from "../../house-tasks/data";
 import { DiyTaskForm } from "../diy-task-form";
+import { DIY_KEYS, projectOptionsFrom, useDiyTasks } from "../data";
 import { createDiyTask } from "./actions";
 
-export default async function NewDiyTaskPage() {
-  const { supabase, profile } = await requireUser();
+export default function NewDiyTaskPage() {
+  const { data: me } = useMe();
+  const isKiosk = !!me?.profile.is_kiosk;
+  const tasks = useDiyTasks();
+  // Kiosk has no personal identity, so the form asks who's creating it.
+  const family = useFamily(isKiosk);
+  // createDiyTask redirects to the list, which then already shows the new task.
+  const action = useSyncedAction(createDiyTask, [...DIY_KEYS]);
 
-  const { data: rows } = await supabase
-    .from("diy_tasks")
-    .select("project")
-    .not("project", "is", null)
-    .order("project");
-
-  const projectOptions = Array.from(
-    new Set((rows ?? []).map((r) => r.project).filter((p): p is string => !!p)),
-  );
-
-  const { data: kioskProfiles } = profile?.is_kiosk
-    ? await supabase
-        .from("profiles")
-        .select("*")
-        .eq("is_archived", false)
-        .eq("is_kiosk", false)
-        .order("display_name")
-        .returns<Profile[]>()
-    : { data: null };
+  if (!me || !tasks.data || (isKiosk && !family.data)) return <Loading />;
 
   return (
     <div>
@@ -32,10 +25,10 @@ export default async function NewDiyTaskPage() {
         New DIY task
       </h1>
       <DiyTaskForm
-        action={createDiyTask}
+        action={action}
         submitLabel="Create"
-        projectOptions={projectOptions}
-        kioskProfiles={kioskProfiles ?? undefined}
+        projectOptions={projectOptionsFrom(tasks.data)}
+        kioskProfiles={isKiosk ? family.data : undefined}
       />
     </div>
   );

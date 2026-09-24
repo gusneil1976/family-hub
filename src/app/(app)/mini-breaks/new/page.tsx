@@ -1,16 +1,20 @@
-import { requireMiniBreaksAccess } from "@/lib/auth";
-import type { MiniBreakUrlCategory } from "@/lib/types";
+"use client";
+
+import { useRequireAccess } from "@/lib/client/me";
+import { useSyncedAction } from "@/lib/client/save";
+import Loading from "../../loading";
 import { MiniBreakForm } from "../mini-break-form";
+import { MINI_BREAKS, useMiniBreakCategories } from "../data";
 import { createMiniBreak } from "./actions";
 
-export default async function NewMiniBreakPage() {
-  const { supabase } = await requireMiniBreaksAccess();
+export default function NewMiniBreakPage() {
+  const me = useRequireAccess((p) => p.has_mini_breaks_access);
+  const categories = useMiniBreakCategories(!!me);
+  // createMiniBreak redirects to the new mini break's own page (fetched fresh);
+  // the list is re-synced so it's there on the way back.
+  const action = useSyncedAction(createMiniBreak, [MINI_BREAKS]);
 
-  const { data: categories } = await supabase
-    .from("mini_break_url_categories")
-    .select("*")
-    .order("name")
-    .returns<MiniBreakUrlCategory[]>();
+  if (!me || !categories.data) return <Loading />;
 
   return (
     <div>
@@ -18,9 +22,9 @@ export default async function NewMiniBreakPage() {
         New mini break idea
       </h1>
       <MiniBreakForm
-        action={createMiniBreak}
+        action={action}
         submitLabel="Create"
-        categories={categories ?? []}
+        categories={categories.data}
       />
     </div>
   );

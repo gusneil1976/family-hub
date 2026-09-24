@@ -1,23 +1,30 @@
 "use client";
 
-import { useTransition } from "react";
+import type { MiniBreakUrlCategory } from "@/lib/types";
+import { patch, useSave } from "@/lib/client/save";
+import { CATEGORIES } from "../data";
 import { deleteCategory } from "./actions";
 
 export function DeleteCategoryButton({ categoryId }: { categoryId: string }) {
-  const [pending, startTransition] = useTransition();
+  const save = useSave();
 
   return (
     <button
       type="button"
-      disabled={pending}
       onClick={() => {
         if (
           confirm(
             "Delete this category? Links using it will become uncategorized.",
           )
         ) {
-          startTransition(() => {
-            deleteCategory(categoryId);
+          // Gone from the list on tap. Mini break pages are re-synced too,
+          // since their links using it lose their category badge.
+          void save(() => deleteCategory(categoryId), {
+            keys: [CATEGORIES, ["mini-break"]],
+            optimistic: (qc) =>
+              patch<MiniBreakUrlCategory[]>(qc, CATEGORIES, (all) =>
+                all.filter((c) => c.id !== categoryId),
+              ),
           });
         }
       }}

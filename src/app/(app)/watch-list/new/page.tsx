@@ -1,29 +1,24 @@
-import { requireUser } from "@/lib/auth";
-import type { Profile } from "@/lib/types";
+"use client";
+
+import { useMe } from "@/lib/client/me";
+import { useSyncedAction } from "@/lib/client/save";
+import Loading from "../../loading";
+import { useFamily } from "../../house-tasks/data";
 import { WatchItemForm } from "../watch-item-form";
+import { platformOptionsFrom, useWatchItems, WATCH_KEYS } from "../data";
 import { createWatchListItem } from "./actions";
 
-export default async function NewWatchListItemPage() {
-  const { supabase, profile } = await requireUser();
+export default function NewWatchListItemPage() {
+  const { data: me } = useMe();
+  const isKiosk = !!me?.profile.is_kiosk;
+  const items = useWatchItems();
+  // Kiosk has no personal identity, so the form asks who's suggesting it.
+  const family = useFamily(isKiosk);
+  // createWatchListItem redirects to the list, which then already shows the
+  // new suggestion.
+  const action = useSyncedAction(createWatchListItem, [...WATCH_KEYS]);
 
-  const { data: rows } = await supabase
-    .from("watch_list_items")
-    .select("platform")
-    .order("platform");
-
-  const platformOptions = Array.from(
-    new Set((rows ?? []).map((r) => r.platform)),
-  );
-
-  const { data: kioskProfiles } = profile?.is_kiosk
-    ? await supabase
-        .from("profiles")
-        .select("*")
-        .eq("is_archived", false)
-        .eq("is_kiosk", false)
-        .order("display_name")
-        .returns<Profile[]>()
-    : { data: null };
+  if (!me || !items.data || (isKiosk && !family.data)) return <Loading />;
 
   return (
     <div>
@@ -31,10 +26,10 @@ export default async function NewWatchListItemPage() {
         Suggest something to watch
       </h1>
       <WatchItemForm
-        action={createWatchListItem}
-        platformOptions={platformOptions}
+        action={action}
+        platformOptions={platformOptionsFrom(items.data)}
         submitLabel="Add to list"
-        kioskProfiles={kioskProfiles ?? undefined}
+        kioskProfiles={isKiosk ? family.data : undefined}
       />
     </div>
   );

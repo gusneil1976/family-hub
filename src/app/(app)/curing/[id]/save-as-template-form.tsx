@@ -1,12 +1,17 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSyncedAction } from "@/lib/client/save";
 import { saveAsTemplate } from "./actions";
 
 type ActionState = { error: string } | undefined;
 
 export function SaveAsTemplateForm({ projectId }: { projectId: string }) {
-  const boundAction = saveAsTemplate.bind(null, projectId);
+  // Refreshes the template list before the redirect to the new template.
+  const boundAction = useSyncedAction<ActionState>(
+    saveAsTemplate.bind(null, projectId),
+    [["curing-templates"]],
+  );
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     boundAction,
     undefined,

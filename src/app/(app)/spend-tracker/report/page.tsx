@@ -1,58 +1,52 @@
-import { requireSpendTrackerAccess } from "@/lib/auth";
-import type { Profile, SpendBudget, SpendCategory } from "@/lib/types";
+"use client";
+
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../loading";
 import { BudgetBar } from "../budget-bar";
+import {
+  useBudgets,
+  useSpendCategories,
+  useSpenders,
+  useTransactionAmounts,
+} from "../data";
 import { formatGBP } from "../format";
 import { MonthPicker } from "../month-picker";
-import { monthDate, monthDateRange, monthKey, monthLabel, parseMonth } from "../month-utils";
+import { monthKey, monthLabel, parseMonth } from "../month-utils";
 
-type TransactionAmount = {
-  category_id: string | null;
-  spent_by: string;
-  amount: number;
-};
+// The month comes from ?month=, which needs a Suspense boundary on a client page.
+export default function SpendReportPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <SpendReportScreen />
+    </Suspense>
+  );
+}
 
-export default async function SpendReportPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ month?: string }>;
-}) {
-  const { supabase } = await requireSpendTrackerAccess();
-  const { month: monthParam } = await searchParams;
-  const { year, month } = parseMonth(monthParam);
-  const { startDate, endDate } = monthDateRange(year, month);
-  const monthValue = monthDate(year, month);
+function SpendReportScreen() {
+  const me = useRequireAccess((p) => p.has_spend_tracker_access);
+  const { year, month } = parseMonth(useSearchParams().get("month") ?? undefined);
+  const categoriesQuery = useSpendCategories();
+  const peopleQuery = useSpenders();
+  const transactionsQuery = useTransactionAmounts(year, month, monthKey(year, month));
+  const budgetsQuery = useBudgets(year, month);
 
-  const [{ data: categories }, { data: people }, { data: transactions }, { data: budgets }] =
-    await Promise.all([
-      supabase
-        .from("spend_categories")
-        .select("*")
-        .order("name")
-        .returns<SpendCategory[]>(),
-      supabase
-        .from("profiles")
-        .select("*")
-        .eq("has_spend_tracker_access", true)
-        .order("display_name")
-        .returns<Profile[]>(),
-      supabase
-        .from("spend_transactions")
-        .select("category_id, spent_by, amount")
-        .gte("date", startDate)
-        .lt("date", endDate)
-        .returns<TransactionAmount[]>(),
-      supabase
-        .from("spend_budgets")
-        .select("*")
-        .eq("month", monthValue)
-        .returns<SpendBudget[]>(),
-    ]);
+  if (
+    !me ||
+    !categoriesQuery.data ||
+    !peopleQuery.data ||
+    !transactionsQuery.data ||
+    !budgetsQuery.data
+  )
+    return <Loading />;
 
-  const people_ = people ?? [];
-  const txns = transactions ?? [];
-  const budgetByCategory = new Map((budgets ?? []).map((b) => [b.category_id, b.amount]));
+  const categories = categoriesQuery.data;
+  const people_ = peopleQuery.data;
+  const txns = transactionsQuery.data;
+  const budgetByCategory = new Map(budgetsQuery.data.map((b) => [b.category_id, b.amount]));
   const rows = [
-    ...(categories ?? []).map((c) => ({ id: c.id as string | null, name: c.name })),
+    ...categories.map((c) => ({ id: c.id as string | null, name: c.name })),
     { id: null, name: "Uncategorized" },
   ];
 

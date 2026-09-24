@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
 import type { MiniBreakUrlCategory } from "@/lib/types";
+import { useSave } from "@/lib/client/save";
+import { miniBreakKey, patchMiniBreakPage } from "../data";
 import { addUrl } from "./actions";
 
 export function AddUrlForm({
@@ -11,11 +12,39 @@ export function AddUrlForm({
   miniBreakId: string;
   categories: MiniBreakUrlCategory[];
 }) {
-  const boundAction = addUrl.bind(null, miniBreakId);
-  const [state, formAction, pending] = useActionState(boundAction, undefined);
+  const save = useSave();
+
+  // The link appears in the list the moment it's submitted (a placeholder row
+  // in the cached page) and the form clears; the re-sync afterwards swaps in
+  // the real row, or the placeholder is rolled back with a toast if addUrl
+  // refuses it.
+  function action(formData: FormData) {
+    const url = String(formData.get("url") ?? "").trim();
+    if (!url) return;
+    const categoryId = String(formData.get("category_id") ?? "").trim() || null;
+    const category = categories.find((c) => c.id === categoryId);
+    void save(() => addUrl(miniBreakId, undefined, formData), {
+      keys: [miniBreakKey(miniBreakId)],
+      optimistic: (qc) =>
+        patchMiniBreakPage(qc, miniBreakId, (page) => ({
+          ...page,
+          urls: [
+            ...page.urls,
+            {
+              id: `optimistic-${Date.now()}`,
+              mini_break_id: miniBreakId,
+              category_id: categoryId,
+              url,
+              created_at: new Date().toISOString(),
+              category: category ? { name: category.name } : null,
+            },
+          ],
+        })),
+    });
+  }
 
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-2">
+    <form action={action} className="flex flex-wrap items-end gap-2">
       <div className="flex-1">
         <label
           htmlFor="url"
@@ -54,14 +83,10 @@ export function AddUrlForm({
       </div>
       <button
         type="submit"
-        disabled={pending}
         className="rounded-md bg-accent hover:bg-accent-hover px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
-        {pending ? "Adding…" : "Add"}
+        Add
       </button>
-      {state?.error && (
-        <p className="w-full text-sm text-red-600">{state.error}</p>
-      )}
     </form>
   );
 }

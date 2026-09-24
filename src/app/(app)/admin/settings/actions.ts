@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import type { PaletteKey } from "@/lib/palettes";
 
@@ -19,5 +19,6 @@ export async function setColorPalette(palette: PaletteKey) {
   // The palette is applied in the root layout, which wraps every route
   // (including /login) — revalidate it so the new colours show up
   // immediately everywhere, not just after a hard refresh.
+  revalidateTag("hub-palette", { expire: 0 });
   revalidatePath("/", "layout");
 }

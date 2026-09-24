@@ -1,9 +1,12 @@
-import { requireAdmin } from "@/lib/auth";
-import type { Profile } from "@/lib/types";
+"use client";
+
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../loading";
 import { AdminToggle } from "./admin-toggle";
 import { ArchiveToggle } from "./archive-toggle";
 import { BakingToggle } from "./baking-toggle";
 import { CreateUserForm } from "./create-user-form";
+import { useAllProfiles } from "./data";
 import { HouseTasksAdminToggle } from "./house-tasks-admin-toggle";
 import { InviteForm } from "./invite-form";
 import { KioskToggle } from "./kiosk-toggle";
@@ -12,14 +15,14 @@ import { RemoveButton } from "./remove-button";
 import { ShoppingListToggle } from "./shopping-list-toggle";
 import { SpendTrackerToggle } from "./spend-tracker-toggle";
 
-export default async function ManageUsersPage() {
-  const { supabase, user: currentUser } = await requireAdmin();
+export default function ManageUsersPage() {
+  const me = useRequireAccess((p) => p.is_admin);
+  const all = useAllProfiles();
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at")
-    .returns<Profile[]>();
+  if (!me || !all.data) return <Loading />;
+
+  const currentUser = me.user;
+  const profiles = all.data;
 
   return (
     <div>
@@ -53,7 +56,7 @@ export default async function ManageUsersPage() {
       </details>
 
       <ul className="divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
-        {profiles?.map((profile) => (
+        {profiles.map((profile) => (
           <li
             key={profile.id}
             className="flex items-center justify-between gap-3 px-4 py-3 text-sm"

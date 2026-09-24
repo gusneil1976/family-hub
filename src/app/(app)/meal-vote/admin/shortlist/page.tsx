@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
-import type { Meal, VotingCycle } from "@/lib/types";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../../loading";
+import { useActiveCycle, useCycleVotes, useShortlist } from "../../data";
 import { ActionButton } from "./action-button";
 import {
   closeVoting,
@@ -11,33 +14,24 @@ import {
 import { SHORTLIST_SIZE } from "./constants";
 import { RemoveItemButton } from "./remove-item-button";
 
-type ShortlistRow = { id: string; meal_id: string; meals: Meal };
+export default function AdminShortlistPage() {
+  const me = useRequireAccess((p) => p.is_admin);
+  const cycleQuery = useActiveCycle(!!me);
+  const cycle = cycleQuery.data;
+  const shortlistQuery = useShortlist(cycle?.id);
+  const votesQuery = useCycleVotes(cycle?.status === "live" ? cycle.id : undefined);
 
-export default async function AdminShortlistPage() {
-  const { supabase } = await requireAdmin();
+  if (
+    !me ||
+    cycle === undefined ||
+    (cycle && !shortlistQuery.data) ||
+    (cycle?.status === "live" && !votesQuery.data)
+  ) {
+    return <Loading />;
+  }
 
-  const { data: cycle } = await supabase
-    .from("voting_cycles")
-    .select("*")
-    .in("status", ["draft", "live"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle<VotingCycle>();
-
-  const { data: shortlist } = cycle
-    ? await supabase
-        .from("shortlist_entries")
-        .select("id, meal_id, meals(*)")
-        .eq("voting_cycle_id", cycle.id)
-        .returns<ShortlistRow[]>()
-    : { data: null };
-
-  const { data: votes } = cycle?.status === "live"
-    ? await supabase
-        .from("votes")
-        .select("meal_id, rank")
-        .eq("voting_cycle_id", cycle.id)
-    : { data: null };
+  const shortlist = shortlistQuery.data;
+  const votes = votesQuery.data;
 
   // 1st choice = 3 points, 2nd = 2, 3rd = 1.
   const POINTS_BY_RANK: Record<number, number> = { 1: 3, 2: 2, 3: 1 };
@@ -88,7 +82,7 @@ export default async function AdminShortlistPage() {
                 className="flex items-center justify-between px-4 py-2 text-sm"
               >
                 <span>{entry.meals.name}</span>
-                <RemoveItemButton entryId={entry.id} />
+                <RemoveItemButton cycleId={cycle.id} entryId={entry.id} />
               </li>
             ))}
           </ul>

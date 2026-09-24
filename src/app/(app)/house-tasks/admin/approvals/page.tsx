@@ -1,20 +1,21 @@
-import { requireHouseTasksAdmin } from "@/lib/auth";
-import type { Task } from "@/lib/types";
+"use client";
+
 import { PageHeader } from "@/components/ui";
-import { approveTaskPoints } from "./actions";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../../loading";
+import { usePendingApprovals } from "../../data";
 import { ApproveForm } from "./approve-form";
 
-type TaskRow = Task & { creator: { display_name: string | null } | null };
+export default function ApprovalsPage() {
+  // Twin of requireHouseTasksAdmin(): everyone else goes back to /house-tasks.
+  const me = useRequireAccess(
+    (p) => p.is_admin || p.is_house_tasks_admin,
+    "/house-tasks",
+  );
+  const q = usePendingApprovals(!!me);
 
-export default async function ApprovalsPage() {
-  const { supabase } = await requireHouseTasksAdmin();
-
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("*, creator:profiles!tasks_created_by_fkey(display_name)")
-    .eq("points_approved", false)
-    .order("created_at")
-    .returns<TaskRow[]>();
+  if (!me || !q.data) return <Loading />;
+  const tasks = q.data;
 
   return (
     <div>
@@ -23,7 +24,7 @@ export default async function ApprovalsPage() {
         description="These tasks won't count toward the scoreboard until approved. Once approved, future recurrences don't need re-approval."
       />
 
-      {!tasks?.length ? (
+      {!tasks.length ? (
         <p className="text-sm text-neutral-500">
           Nothing waiting on approval.
         </p>
@@ -42,10 +43,7 @@ export default async function ApprovalsPage() {
                   by {task.creator?.display_name ?? "someone"}
                 </span>
               </span>
-              <ApproveForm
-                currentPoints={task.points}
-                action={approveTaskPoints.bind(null, task.id)}
-              />
+              <ApproveForm taskId={task.id} currentPoints={task.points} />
             </li>
           ))}
         </ul>

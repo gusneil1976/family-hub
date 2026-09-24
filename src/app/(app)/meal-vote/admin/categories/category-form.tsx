@@ -1,10 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSyncedAction } from "@/lib/client/save";
+import { MEAL_CATEGORIES } from "../../data";
 import { addCategory } from "./actions";
 
 export function CategoryForm() {
-  const [state, formAction, pending] = useActionState(addCategory, undefined);
+  const [state, formAction, pending] = useActionState(
+    useSyncedAction(addCategory, [MEAL_CATEGORIES]),
+    undefined,
+  );
 
   return (
     <form action={formAction} className="flex items-end gap-2">

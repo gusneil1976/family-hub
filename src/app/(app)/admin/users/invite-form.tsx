@@ -1,11 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSyncedAction } from "@/lib/client/save";
 import { inviteFamilyMember } from "./actions";
+import { PROFILE_KEYS } from "./data";
 
 export function InviteForm() {
+  // Re-sync the family list so the new person appears once it's saved.
   const [state, formAction, pending] = useActionState(
-    inviteFamilyMember,
+    useSyncedAction(inviteFamilyMember, PROFILE_KEYS),
     undefined,
   );
 

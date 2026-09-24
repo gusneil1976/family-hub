@@ -1,13 +1,23 @@
+"use client";
+
 import Link from "next/link";
 import { UtensilsCrossed } from "lucide-react";
-import { requireUser } from "@/lib/auth";
-import type { Ingredient, Meal, VotingCycle } from "@/lib/types";
+import type { Ingredient } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
+import { useMe } from "@/lib/client/me";
+import Loading from "../../loading";
+import {
+  checklistKey,
+  useChecklist,
+  useCycleVotes,
+  useResultsCycle,
+  useShortlist,
+  type ShortlistRow,
+} from "../data";
 import { MealImage } from "../meals/meal-image";
 import { ShoppingChecklist, type ChecklistGroup } from "./checklist";
 import { MealCountSelect } from "./meal-count-select";
 
-type ShortlistRow = { meal_id: string; meals: Meal };
 type Voter = { name: string; rank: number };
 
 const RANK_LABELS = ["1st", "2nd", "3rd"];
@@ -86,43 +96,16 @@ function MealGrid({
   );
 }
 
-export default async function ResultsPage() {
-  const { supabase, profile } = await requireUser();
+export default function ResultsPage() {
+  const { data: me } = useMe();
+  const profile = me?.profile;
+  const cycleQuery = useResultsCycle();
+  const cycle = cycleQuery.data;
+  const shortlistQuery = useShortlist(cycle?.id);
+  const votesQuery = useCycleVotes(cycle?.id);
 
-  const { data: cycle } = await supabase
-    .from("voting_cycles")
-    .select("*")
-    .in("status", ["live", "closed"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle<VotingCycle>();
-
-  if (!cycle) {
-    return (
-      <div>
-        <h1 className="mb-2 text-2xl font-bold text-foreground">
-          Results
-        </h1>
-        <p className="text-sm text-neutral-500">
-          No voting cycle has run yet.
-        </p>
-      </div>
-    );
-  }
-
-  const { data: shortlist } = await supabase
-    .from("shortlist_entries")
-    .select("meal_id, meals(*)")
-    .eq("voting_cycle_id", cycle.id)
-    .returns<ShortlistRow[]>();
-
-  const { data: votes } = await supabase
-    .from("votes")
-    .select("meal_id, rank, voter:profiles(display_name)")
-    .eq("voting_cycle_id", cycle.id)
-    .returns<
-      { meal_id: string; rank: number; voter: { display_name: string | null } | null }[]
-    >();
+  const shortlist = shortlistQuery.data;
+  const votes = votesQuery.data;
 
   // 1st choice = 3 points, 2nd = 2, 3rd = 1.
   const POINTS_BY_RANK: Record<number, number> = { 1: 3, 2: 2, 3: 1 };
@@ -150,42 +133,44 @@ export default async function ResultsPage() {
   const rest = totalVotes > 0 ? ranked.slice(3) : [];
 
   // The shopping list covers however many top-ranked meals the admin has
-  // set (default 2) — recomputed on every load, since standing can shift
-  // until voting closes.
-  const mealCount = cycle.shopping_list_meal_count;
+  // set (default 2) — recomputed whenever the votes change, since standing
+  // can shift until voting closes.
+  const mealCount = cycle?.shopping_list_meal_count ?? 0;
   const topN = totalVotes > 0 ? ranked.slice(0, mealCount) : [];
   const topMealIds = topN.map((e) => e.meal_id);
 
-  const { data: ingredients } = topMealIds.length
-    ? await supabase
-        .from("ingredients")
-        .select("*")
-        .in("meal_id", topMealIds)
-        .order("sort_order")
-        .returns<Ingredient[]>()
-    : { data: null };
+  // Only whoever has shopping-list access seeds new rows — everyone else
+  // can still read whatever's already there (RLS allows select for all).
+  const checklist = useChecklist(
+    cycle?.id,
+    topMealIds,
+    !!profile?.has_shopping_list_access,
+  );
 
+  if (!me || cycle === undefined) return <Loading />;
+
+  if (!cycle) {
+    return (
+      <div>
+        <h1 className="mb-2 text-2xl font-bold text-foreground">
+          Results
+        </h1>
+        <p className="text-sm text-neutral-500">
+          No voting cycle has run yet.
+        </p>
+      </div>
+    );
+  }
+
+  if (!shortlist || !votes || (topMealIds.length > 0 && !checklist.data)) {
+    return <Loading />;
+  }
+
+  const ingredients = checklist.data?.ingredients;
   let checklistGroups: ChecklistGroup[] = [];
 
   if (ingredients?.length) {
-    // Only whoever has shopping-list access seeds new rows — everyone else
-    // can still read whatever's already there (RLS allows select for all).
-    if (profile?.has_shopping_list_access) {
-      await supabase.from("shopping_checklist_items").upsert(
-        ingredients.map((ing) => ({
-          voting_cycle_id: cycle.id,
-          ingredient_id: ing.id,
-          checked: false,
-        })),
-        { onConflict: "voting_cycle_id,ingredient_id", ignoreDuplicates: true },
-      );
-    }
-
-    const { data: items } = await supabase
-      .from("shopping_checklist_items")
-      .select("*")
-      .eq("voting_cycle_id", cycle.id);
-
+    const items = checklist.data?.items;
     const itemByIngredient = new Map(items?.map((i) => [i.ingredient_id, i]));
     const ingredientsByMeal = new Map<string, Ingredient[]>();
     for (const ing of ingredients) {
@@ -289,6 +274,7 @@ export default async function ResultsPage() {
                 <span>meal{mealCount === 1 ? "" : "s"}.</span>
               </div>
               <ShoppingChecklist
+                queryKey={checklistKey(cycle.id, topMealIds)}
                 groups={checklistGroups}
                 readOnly={!canToggleChecklist}
                 readOnlyReason={checklistReadOnlyReason}

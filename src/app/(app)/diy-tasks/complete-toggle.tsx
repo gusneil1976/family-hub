@@ -1,8 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useSave } from "@/lib/client/save";
 import { KIOSK_TOGGLE } from "../kiosk-styles";
 import { setComplete } from "./actions";
+import { DIY_KEYS, patchDiyTask } from "./data";
 
 export function CompleteToggle({
   taskId,
@@ -13,7 +14,21 @@ export function CompleteToggle({
   completed: boolean;
   isKiosk?: boolean;
 }) {
-  const [pending, startTransition] = useTransition();
+  const save = useSave();
+
+  // The task moves between the open and Completed sections on tap (a patch
+  // mirroring what setComplete writes); undone with a toast if the save fails.
+  function toggle(next: boolean) {
+    void save(() => setComplete(taskId, next), {
+      keys: [...DIY_KEYS],
+      optimistic: (qc) =>
+        patchDiyTask(qc, taskId, (t) =>
+          next
+            ? { ...t, completed_at: new Date().toISOString(), percent_complete: 100 }
+            : { ...t, completed_at: null },
+        ),
+    });
+  }
 
   return (
     <label
@@ -24,10 +39,7 @@ export function CompleteToggle({
       <input
         type="checkbox"
         checked={completed}
-        disabled={pending}
-        onChange={(e) =>
-          startTransition(() => setComplete(taskId, e.target.checked))
-        }
+        onChange={(e) => toggle(e.target.checked)}
         className={isKiosk ? KIOSK_TOGGLE : "h-4 w-4"}
       />
       Complete

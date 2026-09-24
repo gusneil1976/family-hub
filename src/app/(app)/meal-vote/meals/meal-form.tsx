@@ -1,7 +1,9 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import type { QueryKey } from "@tanstack/react-query";
 import type { Category, Ingredient, Meal } from "@/lib/types";
+import { useSyncedAction } from "@/lib/client/save";
 import { MealImage } from "./meal-image";
 import { parseIngredientLine } from "./parse-bulk-ingredient-line";
 
@@ -13,6 +15,7 @@ const EMPTY_ROW: IngredientRow = { name: "", quantity: "", unit: "" };
 
 export function MealForm({
   action,
+  syncKeys,
   meal,
   ingredients,
   categories,
@@ -23,6 +26,9 @@ export function MealForm({
     state: MealFormState,
     formData: FormData,
   ) => Promise<MealFormState>;
+  // Cached queries to refresh once the save lands, so the meal page it
+  // redirects to (and the library) already show the change.
+  syncKeys: QueryKey[];
   meal?: Partial<Meal>;
   ingredients?: Pick<Ingredient, "name" | "quantity" | "unit">[];
   categories: Category[];
@@ -31,7 +37,10 @@ export function MealForm({
   // the meal's photo unless the admin uploads their own file instead.
   externalImageUrl?: string;
 }) {
-  const [state, formAction, pending] = useActionState(action, undefined);
+  const [state, formAction, pending] = useActionState(
+    useSyncedAction(action, syncKeys),
+    undefined,
+  );
   const [rows, setRows] = useState<IngredientRow[]>(
     ingredients?.length
       ? ingredients.map((i) => ({

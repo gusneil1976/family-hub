@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { KioskModal } from "@/components/kiosk-modal";
+import { useSave, patch } from "@/lib/client/save";
 import { KIOSK_BUTTON_PRIMARY, KIOSK_BUTTON_SECONDARY } from "../../../kiosk-styles";
+import { OPEN_TASKS, TASK_KEYS, type TaskRow } from "../../data";
 import { deleteTask } from "./actions";
 
 export function DeleteTaskButton({
@@ -12,21 +14,25 @@ export function DeleteTaskButton({
   taskId: string;
   isKiosk?: boolean;
 }) {
-  const [pending, startTransition] = useTransition();
+  const save = useSave();
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
-  // deleteTask redirects to /house-tasks itself on success, so there's
-  // nothing to do here in that case — it only ever returns on failure
-  // (not found, can't delete, has completion history).
-  function doDelete() {
+  // deleteTask redirects to /house-tasks itself on success, and the task is
+  // taken out of the cached list first so it's already gone when the list
+  // shows. It only ever returns on failure (not found, can't delete, has
+  // completion history) — the list is then put back and the reason shown
+  // here as well as in a toast.
+  async function doDelete() {
     setError(null);
-    startTransition(async () => {
-      const result = await deleteTask(taskId);
-      if (result?.error) {
-        setError(result.error);
-      }
+    const { data: result } = await save(() => deleteTask(taskId), {
+      keys: [...TASK_KEYS],
+      optimistic: (qc) =>
+        patch<TaskRow[]>(qc, OPEN_TASKS, (tasks) =>
+          tasks.filter((t) => t.id !== taskId),
+        ),
     });
+    if (result?.error) setError(result.error);
   }
 
   if (isKiosk) {
@@ -34,7 +40,6 @@ export function DeleteTaskButton({
       <div>
         <button
           type="button"
-          disabled={pending}
           onClick={() => setOpen(true)}
           className={`border-2 border-red-600 text-red-600 hover:bg-red-50 ${KIOSK_BUTTON_SECONDARY}`}
         >
@@ -52,10 +57,9 @@ export function DeleteTaskButton({
             </button>
             <button
               type="button"
-              disabled={pending}
               onClick={() => {
                 setOpen(false);
-                doDelete();
+                void doDelete();
               }}
               className={`flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 ${KIOSK_BUTTON_PRIMARY}`}
             >
@@ -72,10 +76,9 @@ export function DeleteTaskButton({
     <div>
       <button
         type="button"
-        disabled={pending}
         onClick={() => {
           if (!confirm("Delete this task? This can't be undone.")) return;
-          doDelete();
+          void doDelete();
         }}
         className="text-sm text-neutral-400 hover:text-red-600 disabled:opacity-30"
       >

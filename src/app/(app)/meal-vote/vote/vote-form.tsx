@@ -1,29 +1,33 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { ChevronDown, ChevronUp, UtensilsCrossed, X } from "lucide-react";
 import type { Meal, Profile } from "@/lib/types";
 import { WhoPicker } from "@/components/who-picker";
 import { KIOSK_BUTTON_PRIMARY } from "../../kiosk-styles";
+import { useSave } from "@/lib/client/save";
 import { MealImage } from "../meals/meal-image";
-
-type ActionState = { error: string } | undefined;
+import { replaceVotesInCache, VOTE_KEYS } from "../data";
+import { submitVotes } from "./actions";
 
 const RANK_LABELS = ["1st", "2nd", "3rd"];
 const RANK_STYLES = ["bg-accent", "bg-neutral-500", "bg-amber-700"];
 
 export function VoteForm({
+  cycleId,
   meals,
   initialSelected,
-  action,
+  me,
   kioskProfiles,
 }: {
+  cycleId: string;
   meals: Meal[];
   initialSelected: string[];
-  action: (state: ActionState, formData: FormData) => Promise<ActionState>;
+  me: { id: string; name: string | null };
   kioskProfiles?: Profile[];
 }) {
-  const [state, formAction, pending] = useActionState(action, undefined);
+  const save = useSave();
+  const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>(initialSelected);
   const mealById = new Map(meals.map((m) => [m.id, m]));
   const isKiosk = !!kioskProfiles;
@@ -48,8 +52,34 @@ export function VoteForm({
     });
   }
 
+  // The standings on the results / admin pages change the moment votes are
+  // saved; submitVotes carries on in the background and is rolled back (with
+  // a toast) if the server refuses it.
+  function submit(formData: FormData) {
+    const performedBy = String(formData.get("performed_by") ?? "").trim();
+    if (isKiosk && !performedBy) {
+      setError("Please select who's voting.");
+      return;
+    }
+    setError(null);
+    const voter = isKiosk
+      ? {
+          id: performedBy,
+          name:
+            kioskProfiles?.find((p) => p.id === performedBy)?.display_name ??
+            null,
+          isMe: false,
+        }
+      : { ...me, isMe: true };
+    void save(() => submitVotes(cycleId, undefined, formData), {
+      keys: [...VOTE_KEYS],
+      optimistic: (qc) => replaceVotesInCache(qc, cycleId, voter, selected),
+      ok: "Votes saved",
+    });
+  }
+
   return (
-    <form action={formAction}>
+    <form action={submit}>
       {kioskProfiles && (
         <div className="mb-6">
           <WhoPicker profiles={kioskProfiles} label="Who's voting?" />
@@ -175,20 +205,18 @@ export function VoteForm({
         scores 2, 3rd scores 1.
       </p>
 
-      {state?.error && (
-        <p className="mb-2 text-sm text-red-600">{state.error}</p>
-      )}
+      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
 
       <button
         type="submit"
-        disabled={pending || selected.length === 0}
+        disabled={selected.length === 0}
         className={
           isKiosk
             ? `bg-accent hover:bg-accent-hover text-white disabled:opacity-50 ${KIOSK_BUTTON_PRIMARY}`
             : "rounded-md bg-accent hover:bg-accent-hover px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         }
       >
-        {pending ? "Saving…" : "Save my votes"}
+        Save my votes
       </button>
     </form>
   );

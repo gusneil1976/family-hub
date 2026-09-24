@@ -31,7 +31,9 @@ export function TransactionForm({
   submitLabel: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
-  const today = new Date().toISOString().slice(0, 10);
+  // Rendered in the browser now, so use the local (UK) date — toISOString()
+  // would still say yesterday between midnight and 1am in summer.
+  const today = new Date().toLocaleDateString("en-CA");
 
   return (
     <form action={formAction} className="space-y-6">

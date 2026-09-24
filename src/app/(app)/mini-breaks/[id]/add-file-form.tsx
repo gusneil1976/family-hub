@@ -1,10 +1,17 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSyncedAction } from "@/lib/client/save";
+import { miniBreakKey } from "../data";
 import { uploadFile } from "./actions";
 
 export function AddFileForm({ miniBreakId }: { miniBreakId: string }) {
-  const boundAction = uploadFile.bind(null, miniBreakId);
+  // The upload genuinely has to reach the server before there's anything to
+  // show, so this keeps its "Uploading…" state; the page's cached data is
+  // re-synced once it lands so the new file (with its signed link) appears.
+  const boundAction = useSyncedAction(uploadFile.bind(null, miniBreakId), [
+    miniBreakKey(miniBreakId),
+  ]);
   const [state, formAction, pending] = useActionState(boundAction, undefined);
 
   return (

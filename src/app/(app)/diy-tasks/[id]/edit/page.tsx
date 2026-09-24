@@ -1,43 +1,51 @@
-import { notFound, redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
-import type { DiyTask } from "@/lib/types";
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useMe } from "@/lib/client/me";
+import { useSyncedAction } from "@/lib/client/save";
+import Loading from "../../../loading";
 import { DiyTaskForm } from "../../diy-task-form";
+import { DIY_KEYS, projectOptionsFrom, useDiyTasks } from "../../data";
 import { updateDiyTask } from "./actions";
 import { DeleteDiyTaskButton } from "./delete-diy-task-button";
 
-export default async function EditDiyTaskPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const { supabase, user, profile } = await requireUser();
+export default function EditDiyTaskPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const { data: me } = useMe();
+  // The record comes from the cached list (same columns), so the form opens
+  // instantly when arriving from the list.
+  const tasks = useDiyTasks();
+  const action = useSyncedAction(updateDiyTask.bind(null, id), [...DIY_KEYS]);
 
-  const { data: task } = await supabase
-    .from("diy_tasks")
-    .select("*")
-    .eq("id", id)
-    .single<DiyTask>();
+  const task = tasks.data?.find((t) => t.id === id);
+  const canManage =
+    !!me &&
+    !!task &&
+    (task.created_by === me.user.id || !!me.profile.is_admin || !!me.profile.is_kiosk);
+
+  useEffect(() => {
+    if (me && task && !canManage) router.replace("/diy-tasks");
+  }, [me, task, canManage, router]);
+
+  if (!me || !tasks.data) return <Loading />;
 
   if (!task) {
-    notFound();
+    // Might just be newer than the cached copy — wait for the refresh.
+    if (tasks.isFetching) return <Loading />;
+    return (
+      <p className="text-sm text-neutral-500">
+        That task wasn&apos;t found.{" "}
+        <Link href="/diy-tasks" className="underline hover:text-neutral-900">
+          Back to DIY tasks
+        </Link>
+      </p>
+    );
   }
 
-  const canManage =
-    task.created_by === user.id || !!profile?.is_admin || !!profile?.is_kiosk;
-  if (!canManage) {
-    redirect("/diy-tasks");
-  }
-
-  const { data: rows } = await supabase
-    .from("diy_tasks")
-    .select("project")
-    .not("project", "is", null)
-    .order("project");
-
-  const projectOptions = Array.from(
-    new Set((rows ?? []).map((r) => r.project).filter((p): p is string => !!p)),
-  );
+  if (!canManage) return <Loading />;
 
   return (
     <div>
@@ -45,7 +53,7 @@ export default async function EditDiyTaskPage({
         Edit {task.title}
       </h1>
       <DiyTaskForm
-        action={updateDiyTask.bind(null, task.id)}
+        action={action}
         defaultValues={{
           title: task.title,
           project: task.project,
@@ -53,10 +61,10 @@ export default async function EditDiyTaskPage({
           hours_estimate: task.hours_estimate,
         }}
         submitLabel="Save changes"
-        projectOptions={projectOptions}
+        projectOptions={projectOptionsFrom(tasks.data)}
       />
       <div className="mt-6 border-t border-neutral-200 pt-4">
-        <DeleteDiyTaskButton taskId={task.id} isKiosk={!!profile?.is_kiosk} />
+        <DeleteDiyTaskButton taskId={task.id} isKiosk={!!me.profile.is_kiosk} />
       </div>
     </div>
   );

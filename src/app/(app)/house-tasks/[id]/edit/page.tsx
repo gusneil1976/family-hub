@@ -1,45 +1,57 @@
-import { notFound, redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
-import type { Profile, Task } from "@/lib/types";
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useMe } from "@/lib/client/me";
+import { useSyncedAction } from "@/lib/client/save";
+import Loading from "../../../loading";
 import { TaskForm } from "../../task-form";
+import { TASK_KEYS, useFamily, useTask } from "../../data";
 import { ActiveToggle } from "./active-toggle";
 import { updateTask } from "./actions";
 import { DeleteTaskButton } from "./delete-task-button";
 
-export default async function EditTaskPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const { supabase, user, profile } = await requireUser();
+export default function EditTaskPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const { data: me } = useMe();
+  const task = useTask(id);
+  const profiles = useFamily();
+  // updateTask redirects back to the list; re-syncing first means the
+  // edit is already showing when it lands.
+  const action = useSyncedAction(updateTask.bind(null, id), [...TASK_KEYS]);
 
-  const { data: task } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("id", id)
-    .single<Task>();
-
-  if (!task) {
-    notFound();
-  }
-
+  const t = task.data;
   const canEdit =
-    task.created_by === user.id ||
-    profile?.is_admin ||
-    profile?.is_house_tasks_admin ||
-    profile?.is_kiosk;
-  if (!canEdit) {
-    redirect("/house-tasks");
-  }
+    !!me &&
+    !!t &&
+    (t.created_by === me.user.id ||
+      me.profile.is_admin ||
+      me.profile.is_house_tasks_admin ||
+      me.profile.is_kiosk);
+  const forbidden = !!me && !!t && !canEdit;
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("is_archived", false)
-    .eq("is_kiosk", false)
-    .order("display_name")
-    .returns<Profile[]>();
+  useEffect(() => {
+    if (forbidden) router.replace("/house-tasks");
+  }, [forbidden, router]);
+
+  if (!me || task.data === undefined || !profiles.data || forbidden)
+    return <Loading />;
+
+  if (!t) {
+    return (
+      <div>
+        <p className="text-sm text-neutral-500">Task not found.</p>
+        <Link
+          href="/house-tasks"
+          className="mt-2 inline-block text-sm text-accent underline"
+        >
+          Back to tasks
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -47,15 +59,15 @@ export default async function EditTaskPage({
         Edit task
       </h1>
       <TaskForm
-        action={updateTask.bind(null, task.id)}
-        profiles={profiles ?? []}
-        currentUserId={user.id}
-        task={task}
+        action={action}
+        profiles={profiles.data}
+        currentUserId={me.user.id}
+        task={t}
         submitLabel="Save changes"
       />
       <div className="mt-6 flex items-center gap-4 border-t border-neutral-200 pt-4">
-        <ActiveToggle taskId={task.id} isActive={task.is_active} />
-        <DeleteTaskButton taskId={task.id} isKiosk={!!profile?.is_kiosk} />
+        <ActiveToggle taskId={t.id} isActive={t.is_active} />
+        <DeleteTaskButton taskId={t.id} isKiosk={!!me.profile.is_kiosk} />
       </div>
     </div>
   );

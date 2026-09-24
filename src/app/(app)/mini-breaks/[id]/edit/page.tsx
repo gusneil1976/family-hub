@@ -1,26 +1,41 @@
-import { notFound } from "next/navigation";
-import { requireMiniBreaksAccess } from "@/lib/auth";
-import type { MiniBreak } from "@/lib/types";
+"use client";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useRequireAccess } from "@/lib/client/me";
+import { useSyncedAction } from "@/lib/client/save";
+import Loading from "../../../loading";
 import { MiniBreakForm } from "../../mini-break-form";
+import { MINI_BREAKS, miniBreakKey, useMiniBreaks } from "../../data";
 import { updateMiniBreak } from "./actions";
 import { DeleteMiniBreakButton } from "./delete-mini-break-button";
 
-export default async function EditMiniBreakPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const { supabase } = await requireMiniBreaksAccess();
+export default function EditMiniBreakPage() {
+  const { id } = useParams<{ id: string }>();
+  const me = useRequireAccess((p) => p.has_mini_breaks_access);
+  // The record comes from the cached list (same columns), so the form opens
+  // instantly. updateMiniBreak redirects to the detail page, which is
+  // re-synced first so it already shows the change.
+  const miniBreaks = useMiniBreaks(!!me);
+  const action = useSyncedAction(updateMiniBreak.bind(null, id), [
+    MINI_BREAKS,
+    miniBreakKey(id),
+  ]);
 
-  const { data: miniBreak } = await supabase
-    .from("mini_breaks")
-    .select("*")
-    .eq("id", id)
-    .single<MiniBreak>();
+  if (!me || !miniBreaks.data) return <Loading />;
 
+  const miniBreak = miniBreaks.data.find((mb) => mb.id === id);
   if (!miniBreak) {
-    notFound();
+    // Might just be newer than the cached copy — wait for the refresh.
+    if (miniBreaks.isFetching) return <Loading />;
+    return (
+      <p className="text-sm text-neutral-500">
+        That mini break wasn&apos;t found.{" "}
+        <Link href="/mini-breaks" className="underline hover:text-neutral-900">
+          All mini breaks
+        </Link>
+      </p>
+    );
   }
 
   return (
@@ -29,7 +44,7 @@ export default async function EditMiniBreakPage({
         Edit {miniBreak.title}
       </h1>
       <MiniBreakForm
-        action={updateMiniBreak.bind(null, miniBreak.id)}
+        action={action}
         defaultValues={{
           title: miniBreak.title,
           date_from: miniBreak.date_from,

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
+import { useSave } from "@/lib/client/save";
+import { projectKey, setProjectWeightsInCache } from "../data";
 import { setProjectWeights } from "./actions";
 
 export function ProjectWeights({
@@ -12,7 +14,7 @@ export function ProjectWeights({
   initialWeight: number | null;
   targetWeight: number | null;
 }) {
-  const [pending, startTransition] = useTransition();
+  const save = useSave();
   const [initial, setInitial] = useState(initialWeight?.toString() ?? "");
   const [target, setTarget] = useState(targetWeight?.toString() ?? "");
 
@@ -25,9 +27,14 @@ export function ProjectWeights({
     ) {
       return;
     }
-    startTransition(() =>
-      setProjectWeights(projectId, parsedInitial, parsedTarget),
-    );
+    if (parsedInitial === initialWeight && parsedTarget === targetWeight) return;
+    // No waiting on the server: the cached project updates straight away and
+    // is rolled back (with a toast) if the save is refused.
+    void save(() => setProjectWeights(projectId, parsedInitial, parsedTarget), {
+      keys: [projectKey(projectId), ["curing-projects"]],
+      optimistic: (qc) =>
+        setProjectWeightsInCache(qc, projectId, parsedInitial, parsedTarget),
+    });
   }
 
   return (
@@ -45,7 +52,6 @@ export function ProjectWeights({
           min={0}
           step="0.1"
           value={initial}
-          disabled={pending}
           onChange={(e) => setInitial(e.target.value)}
           onBlur={commit}
           className="w-28 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-accent focus:outline-none"
@@ -64,7 +70,6 @@ export function ProjectWeights({
           min={0}
           step="0.1"
           value={target}
-          disabled={pending}
           onChange={(e) => setTarget(e.target.value)}
           onBlur={commit}
           className="w-28 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-accent focus:outline-none"

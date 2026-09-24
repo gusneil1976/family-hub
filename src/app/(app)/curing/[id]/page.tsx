@@ -1,39 +1,35 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { requireBakingAccess } from "@/lib/auth";
-import type { BakingProject, BakingProjectStep } from "@/lib/types";
+import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/ui";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../loading";
+import { useProject } from "../data";
 import { AddStepForm } from "./add-step-form";
 import { ProjectWeights } from "./project-weights";
 import { SaveAsTemplateForm } from "./save-as-template-form";
 import { StepRow } from "./step-row";
 
-export default async function ProjectDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const { supabase } = await requireBakingAccess();
+export default function ProjectDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const me = useRequireAccess((p) => p.has_baking_access);
+  const detail = useProject(id);
 
-  const { data: project } = await supabase
-    .from("baking_projects")
-    .select("*")
-    .eq("id", id)
-    .single<BakingProject>();
+  if (!me || !detail.data) return <Loading />;
+
+  const { project, steps: all } = detail.data;
 
   if (!project) {
-    notFound();
+    return (
+      <div>
+        <p className="mb-4 text-sm text-neutral-500">Project not found.</p>
+        <Link href="/curing" className="text-sm text-neutral-500 hover:text-neutral-900">
+          ← All projects
+        </Link>
+      </div>
+    );
   }
-
-  const { data: steps } = await supabase
-    .from("baking_project_steps")
-    .select("*")
-    .eq("project_id", id)
-    .order("due_date")
-    .returns<BakingProjectStep[]>();
-
-  const all = steps ?? [];
 
   return (
     <div>

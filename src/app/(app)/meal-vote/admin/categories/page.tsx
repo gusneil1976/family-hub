@@ -1,17 +1,19 @@
+"use client";
+
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
-import type { Category } from "@/lib/types";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../../loading";
+import { useMealCategories } from "../../data";
 import { CategoryForm } from "./category-form";
 import { DeleteCategoryButton } from "./delete-category-button";
 
-export default async function CategoriesPage() {
-  const { supabase } = await requireAdmin();
+export default function CategoriesPage() {
+  const me = useRequireAccess((p) => p.is_admin);
+  const categoriesQuery = useMealCategories(!!me);
 
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("*")
-    .order("name")
-    .returns<Category[]>();
+  if (!me || !categoriesQuery.data) return <Loading />;
+
+  const categories = categoriesQuery.data;
 
   return (
     <div>
@@ -30,7 +32,7 @@ export default async function CategoriesPage() {
       </div>
 
       <ul className="divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
-        {categories?.map((category) => (
+        {categories.map((category) => (
           <li
             key={category.id}
             className="flex items-center justify-between px-4 py-2 text-sm"

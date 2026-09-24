@@ -1,10 +1,14 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
 import type { DiyTask } from "@/lib/types";
 import { Badge, PageHeader } from "@/components/ui";
+import { useMe } from "@/lib/client/me";
 import { KIOSK_BUTTON_PRIMARY, KIOSK_LINK } from "../kiosk-styles";
+import Loading from "../loading";
 import { CompleteToggle } from "./complete-toggle";
 import { ProgressSlider } from "./progress-slider";
+import { useDiyTasks } from "./data";
 
 const NO_PROJECT = "No project";
 
@@ -89,7 +93,7 @@ function ProjectGroups({
                 <div className="flex flex-wrap items-center gap-4">
                   <ProgressSlider
                     taskId={task.id}
-                    initialPercent={task.percent_complete}
+                    percent={task.percent_complete}
                   />
                   <CompleteToggle
                     taskId={task.id}
@@ -118,17 +122,15 @@ function ProjectGroups({
   );
 }
 
-export default async function DiyTasksPage() {
-  const { supabase, user, profile } = await requireUser();
+export default function DiyTasksPage() {
+  const { data: me } = useMe();
+  const tasks = useDiyTasks();
+
+  if (!me || !tasks.data) return <Loading />;
+
+  const { user, profile } = me;
   const isKiosk = !!profile?.is_kiosk;
-
-  const { data: tasks } = await supabase
-    .from("diy_tasks")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .returns<DiyTask[]>();
-
-  const all = tasks ?? [];
+  const all = tasks.data;
   const canManage = (task: DiyTask) =>
     task.created_by === user.id || !!profile?.is_admin || !!profile?.is_kiosk;
 

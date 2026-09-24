@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ChefHat,
@@ -10,7 +12,8 @@ import {
   Wrench,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { useMe } from "@/lib/client/me";
+import Loading from "./loading";
 
 const APPS = [
   {
@@ -41,8 +44,10 @@ const APPS = [
   },
 ];
 
-export default async function HubPage() {
-  const { profile } = await requireUser();
+export default function HubPage() {
+  const { data: me } = useMe();
+  if (!me) return <Loading />;
+  const profile = me.profile;
 
   const apps = [...APPS];
   if (profile?.has_spend_tracker_access) {

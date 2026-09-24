@@ -1,48 +1,31 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
-import type { Profile, Task } from "@/lib/types";
+import type { Profile } from "@/lib/types";
 import { PageHeader, StatTile, StatTileRow } from "@/components/ui";
-import { getUpcomingBakingSteps } from "../curing/get-due-steps";
+import { useMe } from "@/lib/client/me";
 import { KIOSK_BUTTON_PRIMARY } from "../kiosk-styles";
+import Loading from "../loading";
 import { KioskTasksWithQuickAdd } from "./kiosk-tasks-with-quick-add";
 import { TasksWithQuickAdd } from "./tasks-with-quick-add";
 import { isOverdue, startOfWeek } from "./date-utils";
-
-type TaskRow = Task & {
-  assignee: { display_name: string | null } | null;
-};
+import { useFamily, useOpenTasks, useUpcomingBakingSteps, type TaskRow } from "./data";
 
 type PersonSummary = Pick<Profile, "id" | "display_name">;
 
-export default async function HouseTasksPage() {
-  const { supabase, user, profile } = await requireUser();
+export default function HouseTasksPage() {
+  const { data: me } = useMe();
+  const profile = me?.profile;
+  const tasks = useOpenTasks();
+  const bakingSteps = useUpcomingBakingSteps(!!profile?.has_baking_access);
+  // Kiosk has no personal identity to credit points to automatically, so
+  // completing a task there asks who actually did it.
+  const family = useFamily(!!profile?.is_kiosk);
 
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("*, assignee:profiles!tasks_assigned_to_fkey(display_name)")
-    .eq("is_active", true)
-    .is("completed_at", null)
-    .order("due_date", { ascending: true, nullsFirst: false })
-    .returns<TaskRow[]>();
+  if (!me || !tasks.data || (profile?.is_kiosk && !family.data)) return <Loading />;
 
-  const all = tasks ?? [];
-
-  // Generously wide window, not week-precise — the calendar buckets by
-  // local date client-side anyway (same reasoning as tasks, which aren't
-  // date-filtered server-side at all). Only fetched for whoever has Curing
-  // Projects access; everyone else's Calendar view is unaffected.
-  let bakingSteps: Awaited<ReturnType<typeof getUpcomingBakingSteps>> = [];
-  if (profile?.has_baking_access) {
-    const rangeStart = new Date();
-    rangeStart.setDate(rangeStart.getDate() - 14);
-    const rangeEnd = new Date();
-    rangeEnd.setDate(rangeEnd.getDate() + 90);
-    bakingSteps = await getUpcomingBakingSteps(
-      supabase,
-      rangeStart.toISOString().slice(0, 10),
-      rangeEnd.toISOString().slice(0, 10),
-    );
-  }
+  const user = me.user;
+  const all = tasks.data;
   const myTasks = all.filter((t) => t.assigned_to === user.id);
   const otherTasks = all.filter((t) => t.assigned_to !== user.id);
 
@@ -62,18 +45,7 @@ export default async function HouseTasksPage() {
     !!profile?.is_kiosk;
 
   const editableTaskIds = all.filter(canEdit).map((t) => t.id);
-
-  // Kiosk has no personal identity to credit points to automatically, so
-  // completing a task there asks who actually did it.
-  const { data: kioskProfiles } = profile?.is_kiosk
-    ? await supabase
-        .from("profiles")
-        .select("*")
-        .eq("is_archived", false)
-        .eq("is_kiosk", false)
-        .order("display_name")
-        .returns<Profile[]>()
-    : { data: null };
+  const kioskProfiles = family.data ?? [];
 
   // Kiosk has no "logged in as" identity, so "My tasks"/"Other tasks" would
   // just be "nothing"/"everything" — with only a handful of family members,
@@ -81,13 +53,12 @@ export default async function HouseTasksPage() {
   // them (e.g. an archived member) falls back into a catch-all "Other".
   const peopleTasks = profile?.is_kiosk
     ? (() => {
-        const people = kioskProfiles ?? [];
         const groups: { person: PersonSummary; tasks: TaskRow[] }[] =
-          people.map((person) => ({
+          kioskProfiles.map((person) => ({
             person,
             tasks: all.filter((t) => t.assigned_to === person.id),
           }));
-        const assignedIds = new Set(people.map((p) => p.id));
+        const assignedIds = new Set(kioskProfiles.map((p) => p.id));
         const leftover = all.filter((t) => !assignedIds.has(t.assigned_to));
         if (leftover.length > 0) {
           groups.push({
@@ -98,6 +69,15 @@ export default async function HouseTasksPage() {
         return groups;
       })()
     : undefined;
+
+  const stats = (
+    <StatTileRow>
+      <StatTile emphasize label="My tasks" value={myTasks.length} />
+      <StatTile label="Total pending" value={all.length} />
+      <StatTile label="Due this week" value={dueThisWeek} />
+      <StatTile label="Overdue" value={overdueCount} />
+    </StatTileRow>
+  );
 
   return (
     <div>
@@ -122,31 +102,21 @@ export default async function HouseTasksPage() {
           myTasks={myTasks}
           otherTasks={otherTasks}
           editableTaskIds={editableTaskIds}
-          bakingSteps={bakingSteps}
-          kioskProfiles={kioskProfiles ?? []}
+          bakingSteps={bakingSteps.data ?? []}
+          kioskProfiles={kioskProfiles}
           peopleTasks={peopleTasks ?? []}
         >
-          <StatTileRow>
-            <StatTile emphasize label="My tasks" value={myTasks.length} />
-            <StatTile label="Total pending" value={all.length} />
-            <StatTile label="Due this week" value={dueThisWeek} />
-            <StatTile label="Overdue" value={overdueCount} />
-          </StatTileRow>
+          {stats}
         </KioskTasksWithQuickAdd>
       ) : (
         <TasksWithQuickAdd
           myTasks={myTasks}
           otherTasks={otherTasks}
           editableTaskIds={editableTaskIds}
-          bakingSteps={bakingSteps}
+          bakingSteps={bakingSteps.data ?? []}
           currentUserId={user.id}
         >
-          <StatTileRow>
-            <StatTile emphasize label="My tasks" value={myTasks.length} />
-            <StatTile label="Total pending" value={all.length} />
-            <StatTile label="Due this week" value={dueThisWeek} />
-            <StatTile label="Overdue" value={overdueCount} />
-          </StatTileRow>
+          {stats}
         </TasksWithQuickAdd>
       )}
     </div>

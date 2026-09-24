@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
+import { useSave } from "@/lib/client/save";
 import { KioskModal } from "@/components/kiosk-modal";
 import { KIOSK_BUTTON_PRIMARY, KIOSK_BUTTON_SECONDARY } from "../../../kiosk-styles";
+import { DIY_KEYS, removeDiyTask } from "../../data";
 import { deleteDiyTask } from "./actions";
 
 export function DeleteDiyTaskButton({
@@ -13,21 +15,19 @@ export function DeleteDiyTaskButton({
   taskId: string;
   isKiosk?: boolean;
 }) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const save = useSave();
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
+  // Back to the list straight away with the task already gone from it; the
+  // delete runs in the background, and if the server refuses it the task
+  // reappears with a toast explaining why.
   function doDelete() {
-    setError(null);
-    startTransition(async () => {
-      try {
-        await deleteDiyTask(taskId);
-        router.push("/diy-tasks");
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to delete.");
-      }
+    void save(() => deleteDiyTask(taskId), {
+      keys: [...DIY_KEYS],
+      optimistic: (qc) => removeDiyTask(qc, taskId),
     });
+    router.push("/diy-tasks");
   }
 
   if (isKiosk) {
@@ -35,7 +35,6 @@ export function DeleteDiyTaskButton({
       <div>
         <button
           type="button"
-          disabled={pending}
           onClick={() => setOpen(true)}
           className={`border-2 border-red-600 text-red-600 hover:bg-red-50 ${KIOSK_BUTTON_SECONDARY}`}
         >
@@ -53,7 +52,6 @@ export function DeleteDiyTaskButton({
             </button>
             <button
               type="button"
-              disabled={pending}
               onClick={() => {
                 setOpen(false);
                 doDelete();
@@ -64,7 +62,6 @@ export function DeleteDiyTaskButton({
             </button>
           </div>
         </KioskModal>
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
       </div>
     );
   }
@@ -73,7 +70,6 @@ export function DeleteDiyTaskButton({
     <div>
       <button
         type="button"
-        disabled={pending}
         onClick={() => {
           if (!confirm("Delete this DIY task? This can't be undone.")) return;
           doDelete();
@@ -82,7 +78,6 @@ export function DeleteDiyTaskButton({
       >
         Delete task
       </button>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

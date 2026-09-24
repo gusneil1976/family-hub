@@ -1,18 +1,16 @@
-import { requireSpendTrackerAccess } from "@/lib/auth";
-import type { SpendCategory, Vendor } from "@/lib/types";
+"use client";
+
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../loading";
+import { useSpendCategories, useVendors } from "../data";
 import { ImportFlow } from "./import-flow";
 
-export default async function ImportPage() {
-  const { supabase } = await requireSpendTrackerAccess();
+export default function ImportPage() {
+  const me = useRequireAccess((p) => p.has_spend_tracker_access);
+  const categories = useSpendCategories();
+  const vendors = useVendors();
 
-  const [{ data: categories }, { data: vendors }] = await Promise.all([
-    supabase
-      .from("spend_categories")
-      .select("*")
-      .order("name")
-      .returns<SpendCategory[]>(),
-    supabase.from("vendors").select("*").order("name").returns<Vendor[]>(),
-  ]);
+  if (!me || !categories.data || !vendors.data) return <Loading />;
 
   return (
     <div>
@@ -25,7 +23,7 @@ export default async function ImportPage() {
         already logged is skipped automatically.
       </p>
 
-      <ImportFlow categories={categories ?? []} vendorNames={(vendors ?? []).map((v) => v.name)} />
+      <ImportFlow categories={categories.data} vendorNames={vendors.data.map((v) => v.name)} />
     </div>
   );
 }

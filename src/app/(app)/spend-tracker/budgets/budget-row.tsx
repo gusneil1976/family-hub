@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
+import { useSave } from "@/lib/client/save";
+import { setBudgetInCache } from "../data";
 import { setBudget } from "./actions";
 
 export function BudgetRow({
@@ -14,9 +16,8 @@ export function BudgetRow({
   month: string;
   amount: number | null;
 }) {
+  const save = useSave();
   const [value, setValue] = useState(amount ? String(amount) : "");
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const dirty = value !== (amount ? String(amount) : "");
 
   return (
@@ -37,15 +38,12 @@ export function BudgetRow({
           {dirty && (
             <button
               type="button"
-              disabled={pending}
               onClick={() => {
-                setError(null);
-                startTransition(async () => {
-                  try {
-                    await setBudget(categoryId, month, value);
-                  } catch (e) {
-                    setError(e instanceof Error ? e.message : "Failed to save.");
-                  }
+                // The new figure lands in the cached budgets (and so on the
+                // report) at once; rolled back with a toast if it fails.
+                void save(() => setBudget(categoryId, month, value), {
+                  keys: [["budgets", month]],
+                  optimistic: (qc) => setBudgetInCache(qc, categoryId, month, value),
                 });
               }}
               className="shrink-0 rounded-md bg-accent hover:bg-accent-hover px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
@@ -55,7 +53,6 @@ export function BudgetRow({
           )}
         </div>
       </div>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </li>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { SpendCategory } from "@/lib/types";
+import { TRANSACTION_KEYS } from "../data";
 import { formatGBP } from "../format";
 import { commitImport, parseImportCsv, type ImportDraftRow } from "./actions";
 
@@ -14,6 +16,7 @@ export function ImportFlow({
   categories: SpendCategory[];
   vendorNames: string[];
 }) {
+  const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +72,9 @@ export function ImportFlow({
         setError(res.error);
         return;
       }
+      // New rows (and any vendors created for them) show up on the list,
+      // report and pickers without a manual refresh.
+      for (const key of TRANSACTION_KEYS) void qc.invalidateQueries({ queryKey: key });
       setResult(`Imported ${res.imported} transaction${res.imported === 1 ? "" : "s"}.`);
       setRows(null);
       if (fileInputRef.current) fileInputRef.current.value = "";

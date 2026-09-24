@@ -1,22 +1,18 @@
+"use client";
+
 import Link from "next/link";
-import { requireBakingAccess } from "@/lib/auth";
-import type { BakingProject } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../loading";
+import { useProjects } from "./data";
 
-type ProjectRow = BakingProject & {
-  steps: { completed_at: string | null }[];
-};
+export default function CuringProjectsPage() {
+  const me = useRequireAccess((p) => p.has_baking_access);
+  const projects = useProjects();
 
-export default async function CuringProjectsPage() {
-  const { supabase } = await requireBakingAccess();
+  if (!me || !projects.data) return <Loading />;
 
-  const { data: projects } = await supabase
-    .from("baking_projects")
-    .select("*, steps:baking_project_steps(completed_at)")
-    .order("start_date", { ascending: false })
-    .returns<ProjectRow[]>();
-
-  const all = projects ?? [];
+  const all = projects.data;
 
   return (
     <div>

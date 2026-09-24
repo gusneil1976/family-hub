@@ -57,6 +57,7 @@ export function NewMealClient({
       <MealForm
         key={draft?.source_url ?? "empty"}
         action={createMeal}
+        syncKeys={[["meals"]]}
         categories={categories}
         submitLabel="Add meal"
         meal={

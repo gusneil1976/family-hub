@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { Meal } from "@/lib/types";
+import type { MealRow } from "../data";
 import { MealImage } from "./meal-image";
 import { WeeklyMealToggle } from "./weekly-meal-toggle";
-
-export type MealRow = Meal & { categories: { name: string } | null };
 
 const UNCATEGORIZED = "Uncategorized";
 

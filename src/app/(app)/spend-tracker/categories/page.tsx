@@ -1,16 +1,16 @@
-import { requireSpendTrackerAccess } from "@/lib/auth";
-import type { SpendCategory } from "@/lib/types";
+"use client";
+
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../loading";
+import { useSpendCategories } from "../data";
 import { CategoryForm } from "./category-form";
 import { DeleteCategoryButton } from "./delete-category-button";
 
-export default async function SpendCategoriesPage() {
-  const { supabase } = await requireSpendTrackerAccess();
+export default function SpendCategoriesPage() {
+  const me = useRequireAccess((p) => p.has_spend_tracker_access);
+  const categories = useSpendCategories();
 
-  const { data: categories } = await supabase
-    .from("spend_categories")
-    .select("*")
-    .order("name")
-    .returns<SpendCategory[]>();
+  if (!me || !categories.data) return <Loading />;
 
   return (
     <div>
@@ -20,9 +20,9 @@ export default async function SpendCategoriesPage() {
         <CategoryForm />
       </div>
 
-      {categories?.length ? (
+      {categories.data.length ? (
         <ul className="divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
-          {categories.map((category) => (
+          {categories.data.map((category) => (
             <li
               key={category.id}
               className="flex items-center justify-between px-4 py-2 text-sm"

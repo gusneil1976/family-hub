@@ -1,13 +1,12 @@
-import Link from "next/link";
-import { requireUser } from "@/lib/auth";
-import type { WatchListItem } from "@/lib/types";
-import { Badge, PageHeader } from "@/components/ui";
-import { KIOSK_BUTTON_PRIMARY, KIOSK_LINK, KIOSK_ROW } from "../kiosk-styles";
-import { WatchToggles } from "./watch-toggles";
+"use client";
 
-type ItemRow = WatchListItem & {
-  submitter: { display_name: string | null } | null;
-};
+import Link from "next/link";
+import { Badge, PageHeader } from "@/components/ui";
+import { useMe } from "@/lib/client/me";
+import { KIOSK_BUTTON_PRIMARY, KIOSK_LINK, KIOSK_ROW } from "../kiosk-styles";
+import Loading from "../loading";
+import { WatchToggles } from "./watch-toggles";
+import { useWatchItems, type ItemRow } from "./data";
 
 const CATEGORY_LABELS: Record<ItemRow["category"], string> = {
   film: "Films",
@@ -87,19 +86,15 @@ function ItemList({
   );
 }
 
-export default async function WatchListPage() {
-  const { supabase, user, profile } = await requireUser();
+export default function WatchListPage() {
+  const { data: me } = useMe();
+  const items = useWatchItems();
+
+  if (!me || !items.data) return <Loading />;
+
+  const { user, profile } = me;
   const isKiosk = !!profile?.is_kiosk;
-
-  const { data: items } = await supabase
-    .from("watch_list_items")
-    .select(
-      "*, submitter:profiles!watch_list_items_submitted_by_fkey(display_name)",
-    )
-    .order("created_at", { ascending: false })
-    .returns<ItemRow[]>();
-
-  const all = items ?? [];
+  const all = items.data;
   const canManage = (item: ItemRow) =>
     item.submitted_by === user.id || !!profile?.is_admin || !!profile?.is_kiosk;
   // Watching items float to the top of their section; stable sort keeps

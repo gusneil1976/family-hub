@@ -10,6 +10,7 @@ import {
   UtensilsCrossed,
   Wrench,
 } from "lucide-react";
+import { useForgetData } from "@/lib/client/providers";
 import { signOut, stopKioskPreview } from "./actions";
 import { HOUSE_TASKS_NAV, MEAL_VOTE_NAV, type IconType, type NavItem } from "./nav-items";
 
@@ -98,6 +99,7 @@ function SubTab({
 // "sub-selectable" tab strip for whichever app (if any) has sub-pages.
 export function KioskNav({ isPreviewingKiosk }: { isPreviewingKiosk?: boolean }) {
   const pathname = usePathname();
+  const forget = useForgetData();
 
   const subNav: NavItem[] = pathname.startsWith("/meal-vote")
     ? MEAL_VOTE_NAV
@@ -130,7 +132,7 @@ export function KioskNav({ isPreviewingKiosk }: { isPreviewingKiosk?: boolean })
           <Home className="h-6 w-6 text-accent" />
           Family Hub
         </Link>
-        <form action={signOut}>
+        <form action={signOut} onSubmit={forget}>
           <button
             type="submit"
             className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm text-sidebar-muted hover:bg-white/10 hover:text-white"

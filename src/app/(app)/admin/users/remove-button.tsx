@@ -1,37 +1,34 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useSave } from "@/lib/client/save";
 import { removeFamilyMember } from "./actions";
+import { PROFILE_KEYS, removeProfileInCache } from "./data";
 
 export function RemoveButton({ userId }: { userId: string }) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const save = useSave();
 
   return (
     <div>
       <button
         type="button"
-        disabled={pending}
         onClick={() => {
           if (
             !confirm("Permanently remove this person? This can't be undone.")
           ) {
             return;
           }
-          setError(null);
-          startTransition(async () => {
-            try {
-              await removeFamilyMember(userId);
-            } catch (e) {
-              setError(e instanceof Error ? e.message : "Failed to remove.");
-            }
+          // The row goes at once; if the server refuses (e.g. they still
+          // have meals or votes) it comes back and the reason is shown as a
+          // toast.
+          void save(() => removeFamilyMember(userId), {
+            keys: PROFILE_KEYS,
+            optimistic: (qc) => removeProfileInCache(qc, userId),
           });
         }}
         className="text-sm text-neutral-400 hover:text-red-600 disabled:opacity-30"
       >
         Remove
       </button>
-      {error && <p className="mt-1 max-w-[16rem] text-xs text-red-600">{error}</p>}
     </div>
   );
 }

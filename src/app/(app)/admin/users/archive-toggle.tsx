@@ -1,7 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
+import { useSave } from "@/lib/client/save";
 import { setArchived } from "./actions";
+import { PROFILE_KEYS, setFlagInCache } from "./data";
 
 export function ArchiveToggle({
   userId,
@@ -10,13 +11,17 @@ export function ArchiveToggle({
   userId: string;
   isArchived: boolean;
 }) {
-  const [pending, startTransition] = useTransition();
+  const save = useSave();
 
   return (
     <button
       type="button"
-      disabled={pending}
-      onClick={() => startTransition(() => setArchived(userId, !isArchived))}
+      onClick={() =>
+        void save(() => setArchived(userId, !isArchived), {
+          keys: PROFILE_KEYS,
+          optimistic: (qc) => setFlagInCache(qc, userId, "is_archived", !isArchived),
+        })
+      }
       className="text-sm text-neutral-500 underline hover:text-neutral-900 disabled:opacity-30"
     >
       {isArchived ? "Unarchive" : "Archive"}

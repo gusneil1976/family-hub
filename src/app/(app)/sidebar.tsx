@@ -26,6 +26,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
+import { useForgetData } from "@/lib/client/providers";
 import { signOut, startKioskPreview } from "./actions";
 import {
   exact,
@@ -159,6 +160,7 @@ export function Sidebar({
   hasBakingAccess: boolean;
 }) {
   const pathname = usePathname();
+  const forget = useForgetData();
   const [open, setOpen] = useState(false);
   const [prevPathname, setPrevPathname] = useState(pathname);
   const inMealVote = pathname.startsWith("/meal-vote");
@@ -372,7 +374,7 @@ export function Sidebar({
             {email}
           </p>
         )}
-        <form action={signOut}>
+        <form action={signOut} onSubmit={forget}>
           <button
             type="submit"
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-white/10"

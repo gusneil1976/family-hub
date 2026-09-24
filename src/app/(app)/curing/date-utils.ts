@@ -36,3 +36,13 @@ export function addDuration(
   const iso = base.toISOString();
   return { due_date: iso.slice(0, 10), due_time: iso.slice(11, 16) };
 }
+
+// Today's date as "YYYY-MM-DD" in the browser's own (Europe/London) time
+// zone — not toISOString(), which is UTC and gives yesterday's date just
+// after midnight during British Summer Time.
+export function todayLocal(): string {
+  const d = new Date();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+}

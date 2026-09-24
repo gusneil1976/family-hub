@@ -1,16 +1,13 @@
-import { requireUser } from "@/lib/auth";
-import type { Profile } from "@/lib/types";
+"use client";
+
 import { PageHeader } from "@/components/ui";
+import { useMe } from "@/lib/client/me";
+import Loading from "../../loading";
 import { startOfMonth, startOfWeek } from "../date-utils";
+import { useFamily, useScoreboardCompletions } from "../data";
 
-type CompletionRow = {
-  points: number;
-  completed_by: string;
-  completed_at: string;
-};
-
-export default async function ScoreboardPage() {
-  const { supabase } = await requireUser();
+export default function ScoreboardPage() {
+  const { data: me } = useMe();
 
   const now = new Date();
   const weekStart = startOfWeek(now);
@@ -19,32 +16,23 @@ export default async function ScoreboardPage() {
   const monthStart = startOfMonth(now);
   const earliest = lastWeekStart < monthStart ? lastWeekStart : monthStart;
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("is_archived", false)
-    .eq("is_kiosk", false)
-    .order("display_name")
-    .returns<Profile[]>();
+  // Same "everyone who isn't kiosk or archived" list the task pickers use.
+  const family = useFamily();
+  // Only completions of approved tasks count (see useScoreboardCompletions).
+  const completionsQ = useScoreboardCompletions(earliest);
 
-  // Only completions of approved tasks count — filtered via an inner join
-  // so a task's points_approved flag is evaluated live, retroactively
-  // counting completions logged while it was still pending.
-  const { data: completions } = await supabase
-    .from("task_completions")
-    .select("points, completed_by, completed_at, tasks!inner(points_approved)")
-    .eq("tasks.points_approved", true)
-    .gte("completed_at", earliest.toISOString())
-    .returns<CompletionRow[]>();
+  if (!me || !family.data || !completionsQ.data) return <Loading />;
+  const profiles = family.data;
+  const completions = completionsQ.data;
 
   const totals = new Map(
-    (profiles ?? []).map((p) => [
+    profiles.map((p) => [
       p.id,
       { thisWeek: 0, lastWeek: 0, thisMonth: 0 },
     ]),
   );
 
-  for (const c of completions ?? []) {
+  for (const c of completions) {
     const entry = totals.get(c.completed_by);
     if (!entry) continue;
     const at = new Date(c.completed_at);
@@ -53,7 +41,7 @@ export default async function ScoreboardPage() {
     else if (at >= lastWeekStart) entry.lastWeek += c.points;
   }
 
-  const rows = (profiles ?? [])
+  const rows = profiles
     .map((p) => ({ profile: p, ...totals.get(p.id)! }))
     .sort((a, b) => b.thisMonth - a.thisMonth);
 

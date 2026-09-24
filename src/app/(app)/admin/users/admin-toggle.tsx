@@ -1,7 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
+import { useSave } from "@/lib/client/save";
 import { setAdmin } from "./actions";
+import { PROFILE_KEYS, setFlagInCache } from "./data";
 
 export function AdminToggle({
   userId,
@@ -10,13 +11,17 @@ export function AdminToggle({
   userId: string;
   isAdmin: boolean;
 }) {
-  const [pending, startTransition] = useTransition();
+  const save = useSave();
 
   return (
     <button
       type="button"
-      disabled={pending}
-      onClick={() => startTransition(() => setAdmin(userId, !isAdmin))}
+      onClick={() =>
+        void save(() => setAdmin(userId, !isAdmin), {
+          keys: PROFILE_KEYS,
+          optimistic: (qc) => setFlagInCache(qc, userId, "is_admin", !isAdmin),
+        })
+      }
       className="text-sm text-neutral-500 underline hover:text-neutral-900 disabled:opacity-30"
     >
       {isAdmin ? "Remove admin" : "Make admin"}

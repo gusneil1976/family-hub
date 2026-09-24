@@ -1,10 +1,17 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSyncedAction } from "@/lib/client/save";
+import { CATEGORIES } from "../data";
 import { addCategory } from "./actions";
 
 export function CategoryForm() {
-  const [state, formAction, pending] = useActionState(addCategory, undefined);
+  const [state, formAction, pending] = useActionState(
+    // Re-sync the cached list so the new category shows up here and in the
+    // pickers on the transaction/import/budget screens.
+    useSyncedAction(addCategory, [[...CATEGORIES]]),
+    undefined,
+  );
 
   return (
     <form action={formAction} className="flex items-end gap-2">

@@ -1,26 +1,39 @@
-import { notFound } from "next/navigation";
-import { requireBakingAccess } from "@/lib/auth";
-import type { BakingProject } from "@/lib/types";
+"use client";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useSyncedAction } from "@/lib/client/save";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../../loading";
+import { projectKey, useProject } from "../../data";
 import { ProjectForm } from "../../project-form";
 import { updateProject } from "./actions";
 import { DeleteProjectButton } from "./delete-project-button";
 
-export default async function EditProjectPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const { supabase } = await requireBakingAccess();
+export default function EditProjectPage() {
+  const { id } = useParams<{ id: string }>();
+  const me = useRequireAccess((p) => p.has_baking_access);
+  const detail = useProject(id);
+  // The name also shows on the list and the Tasks calendar.
+  const action = useSyncedAction(updateProject.bind(null, id), [
+    projectKey(id),
+    ["curing-projects"],
+    ["baking-steps"],
+  ]);
 
-  const { data: project } = await supabase
-    .from("baking_projects")
-    .select("*")
-    .eq("id", id)
-    .single<BakingProject>();
+  if (!me || !detail.data) return <Loading />;
+
+  const { project } = detail.data;
 
   if (!project) {
-    notFound();
+    return (
+      <div>
+        <p className="mb-4 text-sm text-neutral-500">Project not found.</p>
+        <Link href="/curing" className="text-sm text-neutral-500 hover:text-neutral-900">
+          ← All projects
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -29,7 +42,7 @@ export default async function EditProjectPage({
         Edit {project.name}
       </h1>
       <ProjectForm
-        action={updateProject.bind(null, project.id)}
+        action={action}
         defaultValues={{
           name: project.name,
           start_date: project.start_date,

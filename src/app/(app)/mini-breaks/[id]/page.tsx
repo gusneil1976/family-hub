@@ -1,79 +1,36 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { requireMiniBreaksAccess } from "@/lib/auth";
-import type { MiniBreakFile, MiniBreakUrl, MiniBreakUrlCategory } from "@/lib/types";
+import { useParams } from "next/navigation";
 import { Badge, PageHeader } from "@/components/ui";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../loading";
+import { useMiniBreak, useMiniBreakCategories } from "../data";
 import { AddFileForm } from "./add-file-form";
 import { AddUrlForm } from "./add-url-form";
 import { DeleteFileButton } from "./delete-file-button";
 import { DeleteUrlButton } from "./delete-url-button";
 
-type MiniBreakDetail = {
-  id: string;
-  title: string;
-  date_from: string | null;
-  date_to: string | null;
-  notes: string | null;
-};
+export default function MiniBreakDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const me = useRequireAccess((p) => p.has_mini_breaks_access);
+  const page = useMiniBreak(id, !!me);
+  const categories = useMiniBreakCategories(!!me);
 
-type UrlRow = MiniBreakUrl & { category: { name: string } | null };
+  if (!me || !page.data || !categories.data) return <Loading />;
 
-type FileRow = MiniBreakFile & {
-  uploader: { display_name: string | null } | null;
-};
-
-export default async function MiniBreakDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const { supabase } = await requireMiniBreaksAccess();
-
-  const { data: miniBreak } = await supabase
-    .from("mini_breaks")
-    .select("id, title, date_from, date_to, notes")
-    .eq("id", id)
-    .single<MiniBreakDetail>();
+  const { miniBreak, urls, files } = page.data;
 
   if (!miniBreak) {
-    notFound();
+    return (
+      <p className="text-sm text-neutral-500">
+        That mini break wasn&apos;t found.{" "}
+        <Link href="/mini-breaks" className="underline hover:text-neutral-900">
+          All mini breaks
+        </Link>
+      </p>
+    );
   }
-
-  const [{ data: urls }, { data: files }, { data: categories }] =
-    await Promise.all([
-      supabase
-        .from("mini_break_urls")
-        .select("*, category:mini_break_url_categories(name)")
-        .eq("mini_break_id", id)
-        .order("created_at")
-        .returns<UrlRow[]>(),
-      supabase
-        .from("mini_break_files")
-        .select(
-          "*, uploader:profiles!mini_break_files_uploaded_by_fkey(display_name)",
-        )
-        .eq("mini_break_id", id)
-        .order("created_at")
-        .returns<FileRow[]>(),
-      supabase
-        .from("mini_break_url_categories")
-        .select("*")
-        .order("name")
-        .returns<MiniBreakUrlCategory[]>(),
-    ]);
-
-  const filePaths = (files ?? []).map((f) => f.file_path);
-  const { data: signedUrls } =
-    filePaths.length > 0
-      ? await supabase.storage
-          .from("mini-break-files")
-          .createSignedUrls(filePaths, 3600)
-      : { data: [] };
-
-  const signedUrlByPath = new Map(
-    (signedUrls ?? []).map((s) => [s.path, s.signedUrl]),
-  );
 
   return (
     <div>
@@ -108,7 +65,7 @@ export default async function MiniBreakDetailPage({
 
       <section className="mb-8">
         <h2 className="mb-2 text-sm font-semibold text-neutral-700">Links</h2>
-        {urls && urls.length > 0 && (
+        {urls.length > 0 && (
           <ul className="mb-3 divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
             {urls.map((u) => (
               <li
@@ -131,15 +88,15 @@ export default async function MiniBreakDetailPage({
             ))}
           </ul>
         )}
-        <AddUrlForm miniBreakId={miniBreak.id} categories={categories ?? []} />
+        <AddUrlForm miniBreakId={miniBreak.id} categories={categories.data} />
       </section>
 
       <section>
         <h2 className="mb-2 text-sm font-semibold text-neutral-700">Files</h2>
-        {files && files.length > 0 && (
+        {files.length > 0 && (
           <ul className="mb-3 space-y-2">
             {files.map((f) => {
-              const signedUrl = signedUrlByPath.get(f.file_path);
+              const signedUrl = f.signedUrl;
               return (
                 <li
                   key={f.id}

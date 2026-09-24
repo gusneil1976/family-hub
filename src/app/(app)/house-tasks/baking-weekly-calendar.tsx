@@ -1,7 +1,14 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import { useMemo } from "react";
+import { useSave } from "@/lib/client/save";
 import { completeStepAndRepeat, toggleStepComplete } from "../curing/[id]/actions";
+import {
+  isDraftStep,
+  repeatStepInCache,
+  stepKeys,
+  toggleStepInCache,
+} from "../curing/data";
 import type { DueBakingStep } from "../curing/get-due-steps";
 
 function dateKey(d: Date) {
@@ -18,8 +25,34 @@ function weekdayLabel(d: Date): string {
   return d.toLocaleDateString("en-GB", { weekday: "short" });
 }
 
+// Both views tick steps off the same way: the cached calendar (and the
+// project's own page, if loaded) changes on tap, the save runs in the
+// background and is undone with a toast if the server refuses it.
+function useStepActions(step: DueBakingStep) {
+  const save = useSave();
+  const projectId = step.project?.id;
+  return {
+    // Rows added a moment ago (the next repeat) have no real id yet.
+    draft: isDraftStep(step.id),
+    toggle(completed: boolean) {
+      if (!projectId) return;
+      void save(() => toggleStepComplete(projectId, step.id, completed), {
+        keys: stepKeys(projectId),
+        optimistic: (qc) => toggleStepInCache(qc, projectId, step.id, completed),
+      });
+    },
+    repeat() {
+      if (!projectId) return;
+      void save(() => completeStepAndRepeat(projectId, step.id), {
+        keys: stepKeys(projectId),
+        optimistic: (qc) => repeatStepInCache(qc, projectId, step.id),
+      });
+    },
+  };
+}
+
 function StepCard({ step }: { step: DueBakingStep }) {
-  const [pending, startTransition] = useTransition();
+  const { draft, toggle, repeat } = useStepActions(step);
 
   return (
     <div className="rounded-md border border-l-4 border-card-border border-l-blue-500 bg-card p-2 text-xs shadow-sm">
@@ -40,24 +73,16 @@ function StepCard({ step }: { step: DueBakingStep }) {
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            disabled={pending}
-            onClick={() => {
-              const projectId = step.project!.id;
-              startTransition(() =>
-                toggleStepComplete(projectId, step.id, true),
-              );
-            }}
+            disabled={draft}
+            onClick={() => toggle(true)}
             className="rounded border border-neutral-300 px-1.5 py-0.5 text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
           >
             Complete
           </button>
           <button
             type="button"
-            disabled={pending}
-            onClick={() => {
-              const projectId = step.project!.id;
-              startTransition(() => completeStepAndRepeat(projectId, step.id));
-            }}
+            disabled={draft}
+            onClick={repeat}
             className="rounded border border-blue-500 px-1.5 py-0.5 text-blue-600 hover:bg-blue-50 disabled:opacity-50"
           >
             Complete &amp; repeat
@@ -68,14 +93,8 @@ function StepCard({ step }: { step: DueBakingStep }) {
           <input
             type="checkbox"
             checked={!!step.completed_at}
-            disabled={pending || !step.project}
-            onChange={(e) => {
-              if (!step.project) return;
-              const projectId = step.project.id;
-              startTransition(() =>
-                toggleStepComplete(projectId, step.id, e.target.checked),
-              );
-            }}
+            disabled={draft || !step.project}
+            onChange={(e) => toggle(e.target.checked)}
             className="h-3.5 w-3.5"
           />
           Complete
@@ -86,7 +105,7 @@ function StepCard({ step }: { step: DueBakingStep }) {
 }
 
 function BakingStepRow({ step }: { step: DueBakingStep }) {
-  const [pending, startTransition] = useTransition();
+  const { draft, toggle, repeat } = useStepActions(step);
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
@@ -114,24 +133,16 @@ function BakingStepRow({ step }: { step: DueBakingStep }) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            disabled={pending}
-            onClick={() => {
-              const projectId = step.project!.id;
-              startTransition(() =>
-                toggleStepComplete(projectId, step.id, true),
-              );
-            }}
+            disabled={draft}
+            onClick={() => toggle(true)}
             className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
           >
             Complete
           </button>
           <button
             type="button"
-            disabled={pending}
-            onClick={() => {
-              const projectId = step.project!.id;
-              startTransition(() => completeStepAndRepeat(projectId, step.id));
-            }}
+            disabled={draft}
+            onClick={repeat}
             className="rounded-md border border-blue-500 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50"
           >
             Complete &amp; repeat
@@ -142,14 +153,8 @@ function BakingStepRow({ step }: { step: DueBakingStep }) {
           <input
             type="checkbox"
             checked={!!step.completed_at}
-            disabled={pending || !step.project}
-            onChange={(e) => {
-              if (!step.project) return;
-              const projectId = step.project.id;
-              startTransition(() =>
-                toggleStepComplete(projectId, step.id, e.target.checked),
-              );
-            }}
+            disabled={draft || !step.project}
+            onChange={(e) => toggle(e.target.checked)}
             className="h-4 w-4"
           />
           Complete

@@ -1,34 +1,38 @@
-import { notFound } from "next/navigation";
-import { requireBakingAccess } from "@/lib/auth";
-import type { BakingTemplate, BakingTemplateStep } from "@/lib/types";
+"use client";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useSyncedAction } from "@/lib/client/save";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../../../loading";
+import { useTemplate } from "../../../data";
 import { TemplateForm } from "../../template-form";
 import { updateTemplate } from "./actions";
 import { DeleteTemplateButton } from "./delete-template-button";
 
-export default async function EditTemplatePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const { supabase } = await requireBakingAccess();
+export default function EditTemplatePage() {
+  const { id } = useParams<{ id: string }>();
+  const me = useRequireAccess((p) => p.has_baking_access);
+  const detail = useTemplate(id);
+  const action = useSyncedAction(updateTemplate.bind(null, id), [["curing-templates"]]);
 
-  const { data: template } = await supabase
-    .from("baking_templates")
-    .select("*")
-    .eq("id", id)
-    .single<BakingTemplate>();
+  if (!me || !detail.data) return <Loading />;
+
+  const { template, steps } = detail.data;
 
   if (!template) {
-    notFound();
+    return (
+      <div>
+        <p className="mb-4 text-sm text-neutral-500">Template not found.</p>
+        <Link
+          href="/curing/templates"
+          className="text-sm text-neutral-500 hover:text-neutral-900"
+        >
+          ← All templates
+        </Link>
+      </div>
+    );
   }
-
-  const { data: steps } = await supabase
-    .from("baking_template_steps")
-    .select("*")
-    .eq("template_id", id)
-    .order("sort_order")
-    .returns<BakingTemplateStep[]>();
 
   return (
     <div>
@@ -36,10 +40,10 @@ export default async function EditTemplatePage({
         Edit {template.name}
       </h1>
       <TemplateForm
-        action={updateTemplate.bind(null, template.id)}
+        action={action}
         defaultValues={{
           name: template.name,
-          steps: (steps ?? []).map((s) => ({
+          steps: steps.map((s) => ({
             offset_value: s.offset_value,
             offset_unit: s.offset_unit,
             relative_to_previous: s.relative_to_previous,

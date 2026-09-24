@@ -1,10 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useForgetData } from "@/lib/client/providers";
 import { login } from "./actions";
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(login, undefined);
+  const forget = useForgetData();
+
+  // Never show one person's cached data to whoever signs in next.
+  useEffect(() => forget(), [forget]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">

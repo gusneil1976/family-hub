@@ -1,18 +1,18 @@
+"use client";
+
 import Link from "next/link";
-import { requireMiniBreaksAccess } from "@/lib/auth";
-import type { MiniBreak } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../loading";
+import { useMiniBreaks } from "./data";
 
-export default async function MiniBreaksPage() {
-  const { supabase } = await requireMiniBreaksAccess();
+export default function MiniBreaksPage() {
+  const me = useRequireAccess((p) => p.has_mini_breaks_access);
+  const miniBreaks = useMiniBreaks(!!me);
 
-  const { data: miniBreaks } = await supabase
-    .from("mini_breaks")
-    .select("*")
-    .order("date_from", { ascending: true, nullsFirst: false })
-    .returns<MiniBreak[]>();
+  if (!me || !miniBreaks.data) return <Loading />;
 
-  const all = miniBreaks ?? [];
+  const all = miniBreaks.data;
 
   return (
     <div>

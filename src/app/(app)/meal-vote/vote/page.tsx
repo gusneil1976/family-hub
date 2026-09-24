@@ -1,21 +1,25 @@
-import { requireUser } from "@/lib/auth";
-import type { Meal, Profile, VotingCycle } from "@/lib/types";
+"use client";
+
 import { PageHeader } from "@/components/ui";
-import { submitVotes } from "./actions";
+import { useMe } from "@/lib/client/me";
+import Loading from "../../loading";
+import { useFamily } from "../../house-tasks/data";
+import { useLiveCycle, useMyVotes, useShortlist } from "../data";
 import { VoteForm } from "./vote-form";
 
-type ShortlistRow = { meal_id: string; meals: Meal };
+export default function VotePage() {
+  const { data: me } = useMe();
+  const isKiosk = !!me?.profile.is_kiosk;
+  const cycleQuery = useLiveCycle();
+  const cycle = cycleQuery.data;
+  const shortlist = useShortlist(cycle?.id);
+  // Kiosk has no "my votes" of its own — whoever's picked in the WhoPicker
+  // just starts from a blank ranking each time, rather than trying to
+  // preload a per-person selection client-side.
+  const myVotes = useMyVotes(isKiosk ? undefined : cycle?.id, me?.user.id);
+  const kioskProfiles = useFamily(isKiosk);
 
-export default async function VotePage() {
-  const { supabase, user, profile } = await requireUser();
-
-  const { data: cycle } = await supabase
-    .from("voting_cycles")
-    .select("*")
-    .eq("status", "live")
-    .order("published_at", { ascending: false })
-    .limit(1)
-    .maybeSingle<VotingCycle>();
+  if (!me || cycle === undefined) return <Loading />;
 
   if (!cycle) {
     return (
@@ -29,36 +33,15 @@ export default async function VotePage() {
     );
   }
 
-  const { data: shortlist } = await supabase
-    .from("shortlist_entries")
-    .select("meal_id, meals(*)")
-    .eq("voting_cycle_id", cycle.id)
-    .returns<ShortlistRow[]>();
+  if (
+    !shortlist.data ||
+    (isKiosk ? !kioskProfiles.data : !myVotes.data)
+  ) {
+    return <Loading />;
+  }
 
-  // Kiosk has no "my votes" of its own — whoever's picked in the WhoPicker
-  // just starts from a blank ranking each time, rather than trying to
-  // preload a per-person selection client-side.
-  const { data: myVotes } = profile?.is_kiosk
-    ? { data: null }
-    : await supabase
-        .from("votes")
-        .select("meal_id, rank")
-        .eq("voting_cycle_id", cycle.id)
-        .eq("voter_id", user.id)
-        .order("rank", { ascending: true });
-
-  const { data: kioskProfiles } = profile?.is_kiosk
-    ? await supabase
-        .from("profiles")
-        .select("*")
-        .eq("is_archived", false)
-        .eq("is_kiosk", false)
-        .order("display_name")
-        .returns<Profile[]>()
-    : { data: null };
-
-  const meals = (shortlist ?? []).map((s) => s.meals);
-  const initialSelected = (myVotes ?? []).map((v) => v.meal_id);
+  const meals = shortlist.data.map((s) => s.meals);
+  const initialSelected = (myVotes.data ?? []).map((v) => v.meal_id);
 
   return (
     <div>
@@ -67,10 +50,11 @@ export default async function VotePage() {
         description="Pick up to 3 meals and rank them. You can change your mind until voting closes."
       />
       <VoteForm
+        cycleId={cycle.id}
         meals={meals}
         initialSelected={initialSelected}
-        action={submitVotes.bind(null, cycle.id)}
-        kioskProfiles={kioskProfiles ?? undefined}
+        me={{ id: me.user.id, name: me.profile.display_name }}
+        kioskProfiles={isKiosk ? kioskProfiles.data : undefined}
       />
     </div>
   );

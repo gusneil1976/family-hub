@@ -1,40 +1,32 @@
-import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
-import type { Category, Ingredient, Meal } from "@/lib/types";
+"use client";
+
+import { useParams } from "next/navigation";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../../../loading";
+import { useMeal, useMealCategories, useMealIngredients } from "../../../data";
 import { MealForm } from "../../meal-form";
+import { MealNotFound } from "../../meal-not-found";
 import { updateMeal } from "./actions";
 import { DeleteMealButton } from "./delete-meal-button";
 
-export default async function EditMealPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const { supabase } = await requireAdmin();
+export default function EditMealPage() {
+  const { id } = useParams<{ id: string }>();
+  const me = useRequireAccess((p) => p.is_admin);
+  const mealQuery = useMeal(id);
+  const ingredientsQuery = useMealIngredients(id);
+  const categoriesQuery = useMealCategories();
 
-  const { data: meal } = await supabase
-    .from("meals")
-    .select("*")
-    .eq("id", id)
-    .single<Meal>();
-
-  if (!meal) {
-    notFound();
+  if (
+    !me ||
+    mealQuery.data === undefined ||
+    !ingredientsQuery.data ||
+    !categoriesQuery.data
+  ) {
+    return <Loading />;
   }
 
-  const { data: ingredients } = await supabase
-    .from("ingredients")
-    .select("*")
-    .eq("meal_id", id)
-    .order("sort_order")
-    .returns<Ingredient[]>();
-
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("*")
-    .order("name")
-    .returns<Category[]>();
+  const meal = mealQuery.data;
+  if (!meal) return <MealNotFound />;
 
   return (
     <div>
@@ -43,9 +35,10 @@ export default async function EditMealPage({
       </h1>
       <MealForm
         action={updateMeal.bind(null, meal.id)}
+        syncKeys={[["meals"], ["meal", meal.id], ["ingredients", meal.id]]}
         meal={meal}
-        ingredients={ingredients ?? []}
-        categories={categories ?? []}
+        ingredients={ingredientsQuery.data}
+        categories={categoriesQuery.data}
         submitLabel="Save changes"
       />
       <div className="mt-6 border-t border-neutral-200 pt-4">

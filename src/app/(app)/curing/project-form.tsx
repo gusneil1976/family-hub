@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { todayLocal } from "./date-utils";
 import type { BakingTemplate } from "@/lib/types";
 
 type ActionState = { error: string } | undefined;
@@ -24,7 +25,7 @@ export function ProjectForm({
   templates?: BakingTemplate[];
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocal();
 
   return (
     <form action={formAction} className="space-y-6">

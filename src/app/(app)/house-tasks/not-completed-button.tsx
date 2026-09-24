@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Loader2, X } from "lucide-react";
+import { useState } from "react";
+import { X } from "lucide-react";
+import { useSave } from "@/lib/client/save";
 import { KioskModal } from "@/components/kiosk-modal";
 import {
   KIOSK_BUTTON_PRIMARY,
@@ -9,6 +10,7 @@ import {
   KIOSK_ICON_BUTTON,
 } from "../kiosk-styles";
 import { markNotCompleted } from "./actions";
+import { closeOutTaskInCache, TASK_KEYS } from "./data";
 
 // Marking something not completed has a nuance native confirm() can't
 // express: was the moment genuinely missed (close it out — recurring tasks
@@ -22,13 +24,16 @@ export function NotCompletedButton({
   taskId: string;
   isKiosk?: boolean;
 }) {
-  const [pending, startTransition] = useTransition();
+  const save = useSave();
   const [open, setOpen] = useState(false);
 
+  // Applied on screen straight away; the save runs in the background.
   function choose(close: boolean) {
-    startTransition(async () => {
-      await markNotCompleted(taskId, close);
-      setOpen(false);
+    setOpen(false);
+    void save(() => markNotCompleted(taskId, close), {
+      keys: [...TASK_KEYS],
+      optimistic: close ? (qc) => closeOutTaskInCache(qc, taskId) : undefined,
+      ok: close ? undefined : "Points deducted — task left open",
     });
   }
 
@@ -54,17 +59,12 @@ export function NotCompletedButton({
       ) : (
         <button
           type="button"
-          disabled={pending}
           onClick={() => setOpen(true)}
           aria-label="Not completed"
           title="Not completed"
           className="rounded-md bg-red-600 hover:bg-red-700 p-2 text-white disabled:opacity-50"
         >
-          {pending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <X className="h-4 w-4" />
-          )}
+          <X className="h-4 w-4" />
         </button>
       )}
 
@@ -80,7 +80,6 @@ export function NotCompletedButton({
         <div className="mt-4 space-y-2">
           <button
             type="button"
-            disabled={pending}
             onClick={() => choose(false)}
             className={`w-full border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 ${secondaryBtn}`}
           >
@@ -88,11 +87,10 @@ export function NotCompletedButton({
           </button>
           <button
             type="button"
-            disabled={pending}
             onClick={() => choose(true)}
             className={`w-full bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 ${primaryBtn}`}
           >
-            {pending ? "…" : "Close it — the moment's passed"}
+            Close it — the moment&apos;s passed
           </button>
         </div>
         <button

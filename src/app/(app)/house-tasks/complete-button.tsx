@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Check } from "lucide-react";
+import { useSave } from "@/lib/client/save";
 import type { Profile } from "@/lib/types";
 import { KioskModal } from "@/components/kiosk-modal";
 import { WhoPicker } from "@/components/who-picker";
@@ -11,6 +12,7 @@ import {
   KIOSK_ICON_BUTTON,
 } from "../kiosk-styles";
 import { completeTask } from "./actions";
+import { closeOutTaskInCache, TASK_KEYS } from "./data";
 
 export function CompleteButton({
   taskId,
@@ -19,9 +21,18 @@ export function CompleteButton({
   taskId: string;
   kioskProfiles?: Profile[];
 }) {
-  const [pending, startTransition] = useTransition();
+  const save = useSave();
   const [open, setOpen] = useState(false);
   const [who, setWho] = useState("");
+
+  // The row leaves the list (or jumps to its next due date) immediately; the
+  // save carries on in the background and is undone if the server refuses it.
+  function complete(performedBy?: string) {
+    void save(() => completeTask(taskId, performedBy), {
+      keys: [...TASK_KEYS],
+      optimistic: (qc) => closeOutTaskInCache(qc, taskId),
+    });
+  }
 
   function close() {
     setOpen(false);
@@ -51,16 +62,14 @@ export function CompleteButton({
             </button>
             <button
               type="button"
-              disabled={pending || !who}
-              onClick={() =>
-                startTransition(async () => {
-                  await completeTask(taskId, who);
-                  close();
-                })
-              }
+              disabled={!who}
+              onClick={() => {
+                complete(who);
+                close();
+              }}
               className={`flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 ${KIOSK_BUTTON_PRIMARY}`}
             >
-              {pending ? "Saving…" : "Confirm"}
+              Confirm
             </button>
           </div>
         </KioskModal>
@@ -71,17 +80,12 @@ export function CompleteButton({
   return (
     <button
       type="button"
-      disabled={pending}
-      onClick={() => startTransition(() => completeTask(taskId))}
+      onClick={() => complete()}
       aria-label="Complete"
       title="Complete"
       className="rounded-md bg-green-600 hover:bg-green-700 p-2 text-white disabled:opacity-50"
     >
-      {pending ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <Check className="h-4 w-4" />
-      )}
+      <Check className="h-4 w-4" />
     </button>
   );
 }

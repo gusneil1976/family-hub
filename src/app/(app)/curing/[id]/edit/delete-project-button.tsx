@@ -1,19 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { patch, useSave } from "@/lib/client/save";
+import { PROJECTS, projectKey, UPCOMING_STEPS, type ProjectRow } from "../../data";
+import type { DueBakingStep } from "../../get-due-steps";
 import { deleteProject } from "./actions";
 
 export function DeleteProjectButton({ projectId }: { projectId: string }) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const save = useSave();
   const router = useRouter();
 
   return (
     <div>
       <button
         type="button"
-        disabled={pending}
         onClick={() => {
           if (
             !confirm(
@@ -21,21 +21,25 @@ export function DeleteProjectButton({ projectId }: { projectId: string }) {
             )
           )
             return;
-          setError(null);
-          startTransition(async () => {
-            try {
-              await deleteProject(projectId);
-              router.push("/curing");
-            } catch (e) {
-              setError(e instanceof Error ? e.message : "Failed to delete.");
-            }
+          // Straight back to the list with the project already gone; if the
+          // server refuses, it reappears there with an error toast.
+          void save(() => deleteProject(projectId), {
+            keys: [["curing-projects"], projectKey(projectId), ["baking-steps"]],
+            optimistic: (qc) => {
+              patch<ProjectRow[]>(qc, PROJECTS, (rows) =>
+                rows.filter((p) => p.id !== projectId),
+              );
+              patch<DueBakingStep[]>(qc, UPCOMING_STEPS, (steps) =>
+                steps.filter((s) => s.project?.id !== projectId),
+              );
+            },
           });
+          router.push("/curing");
         }}
         className="text-sm text-neutral-400 hover:text-red-600 disabled:opacity-30"
       >
         Delete project
       </button>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

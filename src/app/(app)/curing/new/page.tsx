@@ -1,16 +1,20 @@
-import { requireBakingAccess } from "@/lib/auth";
-import type { BakingTemplate } from "@/lib/types";
+"use client";
+
+import { useSyncedAction } from "@/lib/client/save";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../loading";
+import { useTemplates } from "../data";
 import { ProjectForm } from "../project-form";
 import { createProject } from "./actions";
 
-export default async function NewProjectPage() {
-  const { supabase } = await requireBakingAccess();
+export default function NewProjectPage() {
+  const me = useRequireAccess((p) => p.has_baking_access);
+  const templates = useTemplates();
+  // Refresh the project list (and the Tasks calendar, for template steps)
+  // before landing on the new project.
+  const action = useSyncedAction(createProject, [["curing-projects"], ["baking-steps"]]);
 
-  const { data: templates } = await supabase
-    .from("baking_templates")
-    .select("*")
-    .order("name")
-    .returns<BakingTemplate[]>();
+  if (!me || !templates.data) return <Loading />;
 
   return (
     <div>
@@ -18,9 +22,9 @@ export default async function NewProjectPage() {
         New project
       </h1>
       <ProjectForm
-        action={createProject}
+        action={action}
         submitLabel="Create project"
-        templates={templates ?? []}
+        templates={templates.data}
       />
     </div>
   );

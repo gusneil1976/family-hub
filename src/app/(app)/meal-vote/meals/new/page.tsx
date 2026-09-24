@@ -1,27 +1,34 @@
-import { requireAdmin } from "@/lib/auth";
-import type { Category } from "@/lib/types";
+"use client";
+
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../../loading";
+import { useMealCategories } from "../../data";
 import { NewMealClient } from "./new-meal-client";
 
-export default async function NewMealPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ url?: string }>;
-}) {
-  const { supabase } = await requireAdmin();
-  const { url } = await searchParams;
+// useSearchParams() needs a Suspense boundary above it.
+export default function NewMealPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <NewMeal />
+    </Suspense>
+  );
+}
 
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("*")
-    .order("name")
-    .returns<Category[]>();
+function NewMeal() {
+  const me = useRequireAccess((p) => p.is_admin);
+  const url = useSearchParams().get("url") ?? undefined;
+  const categories = useMealCategories();
+
+  if (!me || !categories.data) return <Loading />;
 
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold text-foreground">
         Add a meal
       </h1>
-      <NewMealClient categories={categories ?? []} initialUrl={url} />
+      <NewMealClient categories={categories.data} initialUrl={url} />
     </div>
   );
 }

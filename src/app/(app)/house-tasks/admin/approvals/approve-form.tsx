@@ -1,20 +1,34 @@
 "use client";
 
-import { useActionState } from "react";
+import { useSave, patch } from "@/lib/client/save";
+import { APPROVAL_TASKS, TASK_KEYS, type ApprovalRow } from "../../data";
+import { approveTaskPoints } from "./actions";
 
-type ActionState = { error: string } | undefined;
-
+// The task leaves the queue as soon as Approve is tapped; approveTaskPoints
+// runs in the background and the row comes back with a toast if it refuses
+// (e.g. negative points). The re-sync also refreshes the scoreboard, since
+// earlier completions of this task start counting.
 export function ApproveForm({
+  taskId,
   currentPoints,
-  action,
 }: {
+  taskId: string;
   currentPoints: number;
-  action: (state: ActionState, formData: FormData) => Promise<ActionState>;
 }) {
-  const [state, formAction, pending] = useActionState(action, undefined);
+  const save = useSave();
+
+  function approve(formData: FormData) {
+    void save(() => approveTaskPoints(taskId, undefined, formData), {
+      keys: [...TASK_KEYS],
+      optimistic: (qc) =>
+        patch<ApprovalRow[]>(qc, APPROVAL_TASKS, (tasks) =>
+          tasks.filter((t) => t.id !== taskId),
+        ),
+    });
+  }
 
   return (
-    <form action={formAction} className="flex items-center gap-2">
+    <form action={approve} className="flex items-center gap-2">
       <input
         type="number"
         name="points"
@@ -24,12 +38,10 @@ export function ApproveForm({
       />
       <button
         type="submit"
-        disabled={pending}
         className="rounded-md bg-accent hover:bg-accent-hover px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
       >
-        {pending ? "Approving…" : "Approve"}
+        Approve
       </button>
-      {state?.error && <p className="text-xs text-red-600">{state.error}</p>}
     </form>
   );
 }

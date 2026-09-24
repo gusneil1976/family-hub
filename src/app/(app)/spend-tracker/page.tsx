@@ -1,43 +1,34 @@
+"use client";
+
+import { Suspense } from "react";
 import Link from "next/link";
-import { requireSpendTrackerAccess } from "@/lib/auth";
+import { useSearchParams } from "next/navigation";
 import { Badge, PageHeader, StatTile, StatTileRow } from "@/components/ui";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../loading";
+import { useTransactions } from "./data";
 import { formatGBP } from "./format";
 import { MonthPicker } from "./month-picker";
-import { monthDateRange, monthKey, parseMonth } from "./month-utils";
+import { monthKey, parseMonth } from "./month-utils";
 
-type TransactionRow = {
-  id: string;
-  date: string;
-  amount: number;
-  spent_by: string;
-  notes: string | null;
-  vendor: { name: string } | null;
-  category: { name: string } | null;
-  spender: { display_name: string | null } | null;
-};
+// The month comes from ?month=, which needs a Suspense boundary on a client page.
+export default function SpendTrackerPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <SpendTrackerScreen />
+    </Suspense>
+  );
+}
 
-export default async function SpendTrackerPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ month?: string }>;
-}) {
-  const { supabase, user } = await requireSpendTrackerAccess();
-  const { month: monthParam } = await searchParams;
-  const { year, month } = parseMonth(monthParam);
-  const { startDate, endDate } = monthDateRange(year, month);
+function SpendTrackerScreen() {
+  const me = useRequireAccess((p) => p.has_spend_tracker_access);
+  const { year, month } = parseMonth(useSearchParams().get("month") ?? undefined);
+  const transactions = useTransactions(year, month, monthKey(year, month));
 
-  const { data: transactions } = await supabase
-    .from("spend_transactions")
-    .select(
-      "id, date, amount, spent_by, notes, vendor:vendors(name), category:spend_categories(name), spender:profiles!spend_transactions_spent_by_fkey(display_name)",
-    )
-    .gte("date", startDate)
-    .lt("date", endDate)
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .returns<TransactionRow[]>();
+  if (!me || !transactions.data) return <Loading />;
 
-  const all = transactions ?? [];
+  const user = me.user;
+  const all = transactions.data;
   const total = all.reduce((sum, t) => sum + t.amount, 0);
 
   return (

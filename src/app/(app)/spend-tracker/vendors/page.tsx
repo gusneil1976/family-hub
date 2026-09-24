@@ -1,15 +1,15 @@
-import { requireSpendTrackerAccess } from "@/lib/auth";
-import type { Vendor } from "@/lib/types";
+"use client";
+
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../loading";
+import { useVendors } from "../data";
 import { VendorRow } from "./vendor-row";
 
-export default async function VendorsPage() {
-  const { supabase } = await requireSpendTrackerAccess();
+export default function VendorsPage() {
+  const me = useRequireAccess((p) => p.has_spend_tracker_access);
+  const vendors = useVendors();
 
-  const { data: vendors } = await supabase
-    .from("vendors")
-    .select("*")
-    .order("name")
-    .returns<Vendor[]>();
+  if (!me || !vendors.data) return <Loading />;
 
   return (
     <div>
@@ -19,10 +19,12 @@ export default async function VendorsPage() {
         rename one here to fix a typo.
       </p>
 
-      {vendors?.length ? (
+      {vendors.data.length ? (
         <ul className="divide-y divide-neutral-200 rounded-xl border border-card-border bg-card shadow-sm">
-          {vendors.map((vendor) => (
-            <VendorRow key={vendor.id} id={vendor.id} name={vendor.name} />
+          {vendors.data.map((vendor) => (
+            // Keyed by name too, so a rename arriving from elsewhere (or a
+            // rolled-back one) resets the input box to the saved name.
+            <VendorRow key={`${vendor.id}:${vendor.name}`} id={vendor.id} name={vendor.name} />
           ))}
         </ul>
       ) : (

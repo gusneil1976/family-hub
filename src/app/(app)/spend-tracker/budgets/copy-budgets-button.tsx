@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useSave } from "@/lib/client/save";
+import { copyBudgetsInCache } from "../data";
 import { copyBudgetsFromPreviousMonth } from "./actions";
 
 export function CopyBudgetsButton({
@@ -10,29 +11,24 @@ export function CopyBudgetsButton({
   month: string;
   previousMonth: string;
 }) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const save = useSave();
 
   return (
     <div>
       <button
         type="button"
-        disabled={pending}
         onClick={() => {
-          setError(null);
-          startTransition(async () => {
-            try {
-              await copyBudgetsFromPreviousMonth(month, previousMonth);
-            } catch (e) {
-              setError(e instanceof Error ? e.message : "Failed to copy.");
-            }
+          // Fills the empty rows from last month's cached figures straight
+          // away; the re-sync afterwards confirms what the server saved.
+          void save(() => copyBudgetsFromPreviousMonth(month, previousMonth), {
+            keys: [["budgets", month]],
+            optimistic: (qc) => copyBudgetsInCache(qc, month, previousMonth),
           });
         }}
         className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
       >
-        {pending ? "Copying…" : "Copy from previous month"}
+        Copy from previous month
       </button>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

@@ -1,7 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import type { BakingProjectStep } from "@/lib/types";
+import { useSave } from "@/lib/client/save";
+import {
+  deleteStepInCache,
+  isDraftStep,
+  repeatStepInCache,
+  setStepWeightInCache,
+  stepKeys,
+  toggleStepInCache,
+} from "../data";
 import {
   completeStepAndRepeat,
   deleteStep,
@@ -16,14 +25,29 @@ export function StepRow({
   projectId: string;
   step: BakingProjectStep;
 }) {
-  const [pending, startTransition] = useTransition();
+  const save = useSave();
   const [weight, setWeight] = useState(step.weight?.toString() ?? "");
+  // A row that was only just added on this screen (e.g. the next repeat)
+  // has no real id until the re-sync lands a moment later.
+  const draft = isDraftStep(step.id);
+  const keys = stepKeys(projectId);
+
+  function toggle(completed: boolean) {
+    void save(() => toggleStepComplete(projectId, step.id, completed), {
+      keys,
+      optimistic: (qc) => toggleStepInCache(qc, projectId, step.id, completed),
+    });
+  }
 
   function commitWeight() {
     const trimmed = weight.trim();
     const parsed = trimmed ? Number(trimmed) : null;
     if (trimmed && !Number.isFinite(parsed)) return;
-    startTransition(() => setStepWeight(projectId, step.id, parsed));
+    if (parsed === step.weight || draft) return;
+    void save(() => setStepWeight(projectId, step.id, parsed), {
+      keys,
+      optimistic: (qc) => setStepWeightInCache(qc, projectId, step.id, parsed),
+    });
   }
 
   return (
@@ -39,21 +63,20 @@ export function StepRow({
             <div className="mt-1 flex items-center gap-2">
               <button
                 type="button"
-                disabled={pending}
-                onClick={() =>
-                  startTransition(() =>
-                    toggleStepComplete(projectId, step.id, true),
-                  )
-                }
+                disabled={draft}
+                onClick={() => toggle(true)}
                 className="rounded-md border border-neutral-300 px-2 py-0.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
               >
                 Complete
               </button>
               <button
                 type="button"
-                disabled={pending}
+                disabled={draft}
                 onClick={() =>
-                  startTransition(() => completeStepAndRepeat(projectId, step.id))
+                  void save(() => completeStepAndRepeat(projectId, step.id), {
+                    keys,
+                    optimistic: (qc) => repeatStepInCache(qc, projectId, step.id),
+                  })
                 }
                 className="rounded-md border border-accent px-2 py-0.5 text-xs font-medium text-accent hover:bg-accent/10 disabled:opacity-50"
               >
@@ -66,12 +89,8 @@ export function StepRow({
             <input
               type="checkbox"
               checked={!!step.completed_at}
-              disabled={pending}
-              onChange={(e) =>
-                startTransition(() =>
-                  toggleStepComplete(projectId, step.id, e.target.checked),
-                )
-              }
+              disabled={draft}
+              onChange={(e) => toggle(e.target.checked)}
               className="h-4 w-4"
             />
             <span
@@ -110,10 +129,13 @@ export function StepRow({
         </div>
         <button
           type="button"
-          disabled={pending}
+          disabled={draft}
           onClick={() => {
             if (confirm("Remove this step?")) {
-              startTransition(() => deleteStep(projectId, step.id));
+              void save(() => deleteStep(projectId, step.id), {
+                keys,
+                optimistic: (qc) => deleteStepInCache(qc, projectId, step.id),
+              });
             }
           }}
           className="text-sm text-neutral-400 hover:text-red-600 disabled:opacity-30"

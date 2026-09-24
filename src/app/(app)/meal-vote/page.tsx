@@ -1,25 +1,21 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
-import type { VotingCycle } from "@/lib/types";
+import { useMe } from "@/lib/client/me";
+import Loading from "../loading";
+import { useLiveCycle, useMyVotes } from "./data";
 
-export default async function MealVotePage() {
-  const { supabase, user } = await requireUser();
+export default function MealVotePage() {
+  const { data: me } = useMe();
+  const liveCycle = useLiveCycle();
+  const myVotes = useMyVotes(liveCycle.data?.id, me?.user.id);
 
-  const { data: liveCycle } = await supabase
-    .from("voting_cycles")
-    .select("*")
-    .eq("status", "live")
-    .maybeSingle<VotingCycle>();
-
-  let alreadyVoted = false;
-  if (liveCycle) {
-    const { count } = await supabase
-      .from("votes")
-      .select("id", { count: "exact", head: true })
-      .eq("voting_cycle_id", liveCycle.id)
-      .eq("voter_id", user.id);
-    alreadyVoted = (count ?? 0) > 0;
+  if (!me || liveCycle.data === undefined || (liveCycle.data && !myVotes.data)) {
+    return <Loading />;
   }
+
+  const cycle = liveCycle.data;
+  const alreadyVoted = (myVotes.data?.length ?? 0) > 0;
 
   return (
     <div>
@@ -28,7 +24,7 @@ export default async function MealVotePage() {
         Vote on this week&apos;s meal and browse the family recipe library.
       </p>
 
-      {liveCycle && (
+      {cycle && (
         <div className="mt-4 rounded-md border border-neutral-300 bg-neutral-50 px-4 py-3">
           <p className="text-sm text-neutral-800">
             {alreadyVoted

@@ -1,18 +1,20 @@
-import { requireUser } from "@/lib/auth";
-import type { Profile } from "@/lib/types";
+"use client";
+
+import { useMe } from "@/lib/client/me";
+import { useSyncedAction } from "@/lib/client/save";
+import Loading from "../../loading";
 import { TaskForm } from "../task-form";
+import { TASK_KEYS, useFamily } from "../data";
 import { createTask } from "./actions";
 
-export default async function NewTaskPage() {
-  const { supabase, user, profile } = await requireUser();
+export default function NewTaskPage() {
+  const { data: me } = useMe();
+  const profiles = useFamily();
+  // createTask redirects back to the list; re-syncing first means the new
+  // task is already there when it lands.
+  const action = useSyncedAction(createTask, [...TASK_KEYS]);
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("is_archived", false)
-    .eq("is_kiosk", false)
-    .order("display_name")
-    .returns<Profile[]>();
+  if (!me || !profiles.data) return <Loading />;
 
   return (
     <div>
@@ -20,11 +22,11 @@ export default async function NewTaskPage() {
         New task
       </h1>
       <TaskForm
-        action={createTask}
-        profiles={profiles ?? []}
-        currentUserId={user.id}
+        action={action}
+        profiles={profiles.data}
+        currentUserId={me.user.id}
         submitLabel="Create task"
-        isKiosk={!!profile?.is_kiosk}
+        isKiosk={!!me.profile.is_kiosk}
       />
     </div>
   );

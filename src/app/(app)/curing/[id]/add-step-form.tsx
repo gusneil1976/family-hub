@@ -1,12 +1,18 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSyncedAction } from "@/lib/client/save";
+import { stepKeys } from "../data";
 import { addStep } from "./actions";
 
 type ActionState = { error: string } | undefined;
 
 export function AddStepForm({ projectId }: { projectId: string }) {
-  const boundAction = addStep.bind(null, projectId);
+  // Re-syncs the project (and the Tasks calendar) once the step is saved.
+  const boundAction = useSyncedAction<ActionState>(
+    addStep.bind(null, projectId),
+    stepKeys(projectId),
+  );
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     boundAction,
     undefined,

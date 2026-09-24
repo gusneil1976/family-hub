@@ -1,16 +1,11 @@
-import { requireUser } from "@/lib/auth";
-import { Badge, PageHeader } from "@/components/ui";
-import { startOfMonth, startOfWeek } from "../date-utils";
-import { UncompleteButton } from "./uncomplete-button";
+"use client";
 
-type CompletionRow = {
-  id: string;
-  points: number;
-  closed_task: boolean;
-  completed_at: string;
-  tasks: { title: string } | null;
-  profiles: { display_name: string | null } | null;
-};
+import { Badge, PageHeader } from "@/components/ui";
+import { useMe } from "@/lib/client/me";
+import Loading from "../../loading";
+import { startOfMonth, startOfWeek } from "../date-utils";
+import { useMonthCompletions, type CompletionRow } from "../data";
+import { UncompleteButton } from "./uncomplete-button";
 
 function CompletionGroup({
   title,
@@ -62,19 +57,11 @@ function CompletionGroup({
   );
 }
 
-export default async function CompletedPage() {
-  const { supabase } = await requireUser();
+export default function CompletedPage() {
+  const { data: me } = useMe();
+  const completions = useMonthCompletions(startOfMonth(new Date()));
 
-  const monthStart = startOfMonth(new Date());
-
-  const { data: completions } = await supabase
-    .from("task_completions")
-    .select(
-      "id, points, closed_task, completed_at, tasks(title), profiles(display_name)",
-    )
-    .gte("completed_at", monthStart.toISOString())
-    .order("completed_at", { ascending: false })
-    .returns<CompletionRow[]>();
+  if (!me || !completions.data) return <Loading />;
 
   const now = new Date();
   const weekStart = startOfWeek(now);
@@ -85,7 +72,7 @@ export default async function CompletedPage() {
   const lastWeek: CompletionRow[] = [];
   const earlierThisMonth: CompletionRow[] = [];
 
-  for (const c of completions ?? []) {
+  for (const c of completions.data) {
     const at = new Date(c.completed_at);
     if (at >= weekStart) thisWeek.push(c);
     else if (at >= lastWeekStart) lastWeek.push(c);

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
+import type { Vendor } from "@/lib/types";
+import { patch, useSave } from "@/lib/client/save";
+import { VENDORS } from "../data";
 import { deleteVendor, renameVendor } from "./actions";
 
 export function VendorRow({ id, name }: { id: string; name: string }) {
+  const save = useSave();
   const [value, setValue] = useState(name);
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const dirty = value.trim() !== name && value.trim() !== "";
 
   return (
@@ -21,17 +23,19 @@ export function VendorRow({ id, name }: { id: string; name: string }) {
           {dirty && (
             <button
               type="button"
-              disabled={pending}
               onClick={() => {
-                setError(null);
-                startTransition(async () => {
-                  try {
-                    await renameVendor(id, value);
-                  } catch (e) {
-                    setError(
-                      e instanceof Error ? e.message : "Failed to rename.",
-                    );
-                  }
+                const trimmed = value.trim();
+                // Renamed on screen at once (kept in name order); transaction
+                // lists pick the new name up on the re-sync. A clash with an
+                // existing name is undone with an error toast.
+                void save(() => renameVendor(id, value), {
+                  keys: [[...VENDORS], ["transactions"]],
+                  optimistic: (qc) =>
+                    patch<Vendor[]>(qc, VENDORS, (vendors) =>
+                      vendors
+                        .map((v) => (v.id === id ? { ...v, name: trimmed } : v))
+                        .sort((a, b) => a.name.localeCompare(b.name)),
+                    ),
                 });
               }}
               className="shrink-0 rounded-md bg-accent hover:bg-accent-hover px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
@@ -42,20 +46,20 @@ export function VendorRow({ id, name }: { id: string; name: string }) {
         </div>
         <button
           type="button"
-          disabled={pending}
           onClick={() => {
             if (
               confirm(
                 "Delete this vendor? Only possible if it has no transactions.",
               )
             ) {
-              setError(null);
-              startTransition(async () => {
-                try {
-                  await deleteVendor(id);
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "Failed to delete.");
-                }
+              // Removed straight away; if it still has transactions the
+              // server refuses and the row comes back with an error toast.
+              void save(() => deleteVendor(id), {
+                keys: [[...VENDORS]],
+                optimistic: (qc) =>
+                  patch<Vendor[]>(qc, VENDORS, (vendors) =>
+                    vendors.filter((v) => v.id !== id),
+                  ),
               });
             }
           }}
@@ -64,7 +68,6 @@ export function VendorRow({ id, name }: { id: string; name: string }) {
           Delete
         </button>
       </div>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </li>
   );
 }

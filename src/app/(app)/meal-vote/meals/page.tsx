@@ -1,17 +1,21 @@
+"use client";
+
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
+import { useMe } from "@/lib/client/me";
+import Loading from "../../loading";
+import { useMeals } from "../data";
 import { ImportFromUrlBox } from "./import-from-url-box";
-import { MealList, type MealRow } from "./meal-list";
+import { MealList } from "./meal-list";
 
-export default async function MealsPage() {
-  const { supabase, profile } = await requireUser();
+export default function MealsPage() {
+  const { data: me } = useMe();
+  const mealsQuery = useMeals();
 
-  const { data: meals } = await supabase
-    .from("meals")
-    .select("*, categories(name)")
-    .order("name")
-    .returns<MealRow[]>();
+  if (!me || !mealsQuery.data) return <Loading />;
+
+  const profile = me.profile;
+  const meals = mealsQuery.data;
 
   return (
     <div>

@@ -1,21 +1,16 @@
-import { requireAdmin } from "@/lib/auth";
+"use client";
+
 import { PageHeader } from "@/components/ui";
-import { PALETTES, DEFAULT_PALETTE, type PaletteKey } from "@/lib/palettes";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../loading";
+import { useHubSettings } from "./data";
 import { PaletteForm } from "./palette-form";
 
-export default async function AppearanceSettingsPage() {
-  const { supabase } = await requireAdmin();
+export default function AppearanceSettingsPage() {
+  const me = useRequireAccess((p) => p.is_admin);
+  const settings = useHubSettings();
 
-  const { data } = await supabase
-    .from("hub_settings")
-    .select("color_palette")
-    .eq("id", 1)
-    .single();
-
-  const currentKey: PaletteKey =
-    data?.color_palette && data.color_palette in PALETTES
-      ? (data.color_palette as PaletteKey)
-      : DEFAULT_PALETTE;
+  if (!me || !settings.data) return <Loading />;
 
   return (
     <div>
@@ -23,7 +18,7 @@ export default async function AppearanceSettingsPage() {
         title="Appearance"
         description="Choose the colour palette for the whole hub — applies for everyone, including the sign-in page."
       />
-      <PaletteForm current={currentKey} />
+      <PaletteForm current={settings.data.color_palette} />
     </div>
   );
 }

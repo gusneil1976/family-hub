@@ -1,35 +1,28 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/auth";
-import type { Ingredient, Meal } from "@/lib/types";
+import { useParams } from "next/navigation";
+import { useMe } from "@/lib/client/me";
+import Loading from "../../../loading";
+import { useMeal, useMealIngredients } from "../../data";
 import { MealImage } from "../meal-image";
+import { MealNotFound } from "../meal-not-found";
 
-type MealRow = Meal & { categories: { name: string } | null };
+export default function MealDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { data: me } = useMe();
+  const mealQuery = useMeal(id);
+  const ingredientsQuery = useMealIngredients(id);
 
-export default async function MealDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const { supabase, profile } = await requireUser();
-
-  const { data: meal } = await supabase
-    .from("meals")
-    .select("*, categories(name)")
-    .eq("id", id)
-    .single<MealRow>();
-
-  if (!meal) {
-    notFound();
+  if (!me || mealQuery.data === undefined || !ingredientsQuery.data) {
+    return <Loading />;
   }
 
-  const { data: ingredients } = await supabase
-    .from("ingredients")
-    .select("*")
-    .eq("meal_id", id)
-    .order("sort_order")
-    .returns<Ingredient[]>();
+  const meal = mealQuery.data;
+  if (!meal) return <MealNotFound />;
+
+  const profile = me.profile;
+  const ingredients = ingredientsQuery.data;
 
   return (
     <div>

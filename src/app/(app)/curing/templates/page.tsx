@@ -1,20 +1,18 @@
+"use client";
+
 import Link from "next/link";
-import { requireBakingAccess } from "@/lib/auth";
-import type { BakingTemplate } from "@/lib/types";
 import { PageHeader } from "@/components/ui";
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../../loading";
+import { useTemplates } from "../data";
 
-type TemplateRow = BakingTemplate & { steps: { count: number }[] };
+export default function TemplatesPage() {
+  const me = useRequireAccess((p) => p.has_baking_access);
+  const templates = useTemplates();
 
-export default async function TemplatesPage() {
-  const { supabase } = await requireBakingAccess();
+  if (!me || !templates.data) return <Loading />;
 
-  const { data: templates } = await supabase
-    .from("baking_templates")
-    .select("*, steps:baking_template_steps(count)")
-    .order("name")
-    .returns<TemplateRow[]>();
-
-  const all = templates ?? [];
+  const all = templates.data;
 
   return (
     <div>

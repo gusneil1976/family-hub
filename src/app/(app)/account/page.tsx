@@ -1,16 +1,18 @@
-import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
+"use client";
+
+import { useRequireAccess } from "@/lib/client/me";
+import Loading from "../loading";
 import { DisplayNameForm } from "./display-name-form";
 import { SetPasswordForm } from "./set-password-form";
 
-export default async function AccountPage() {
-  const { profile } = await requireUser();
-
+export default function AccountPage() {
   // Kiosk is a shared login, not a personal one — no per-person account
-  // settings to manage from it.
-  if (profile?.is_kiosk) {
-    redirect("/");
-  }
+  // settings to manage from it, so it's sent back home.
+  const me = useRequireAccess((p) => !p.is_kiosk);
+
+  if (!me) return <Loading />;
+
+  const profile = me.profile;
 
   return (
     <div>

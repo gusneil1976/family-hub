@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import type { QueryKey } from "@tanstack/react-query";
+import { patch, useSave } from "@/lib/client/save";
+import type { ChecklistData } from "../data";
 import { toggleChecklistItem } from "./actions";
 
 export type ChecklistIngredient = {
@@ -23,25 +25,35 @@ function formatIngredient(item: ChecklistIngredient) {
 }
 
 export function ShoppingChecklist({
+  queryKey,
   groups,
   readOnly,
   readOnlyReason,
 }: {
+  // The cached checklist query these groups were built from — ticks are
+  // written straight into it so both lists below update on tap.
+  queryKey: QueryKey;
   groups: ChecklistGroup[];
   readOnly: boolean;
   readOnlyReason?: string;
 }) {
+  const save = useSave();
   const allItems = groups.flatMap((g) => g.items);
-  const [checkedMap, setCheckedMap] = useState<Record<string, boolean>>(
-    Object.fromEntries(allItems.map((i) => [i.itemId, i.checked])),
+  const checkedMap: Record<string, boolean> = Object.fromEntries(
+    allItems.map((i) => [i.itemId, i.checked]),
   );
-  const [, startTransition] = useTransition();
 
   function toggle(itemId: string, next: boolean) {
     if (readOnly) return;
-    setCheckedMap((prev) => ({ ...prev, [itemId]: next }));
-    startTransition(() => {
-      toggleChecklistItem(itemId, next);
+    void save(() => toggleChecklistItem(itemId, next), {
+      keys: [queryKey],
+      optimistic: (qc) =>
+        patch<ChecklistData>(qc, queryKey, (d) => ({
+          ...d,
+          items: d.items.map((i) =>
+            i.id === itemId ? { ...i, checked: next } : i,
+          ),
+        })),
     });
   }
 

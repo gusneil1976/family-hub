@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSyncedAction } from "@/lib/client/save";
 import { updateDisplayName } from "./actions";
 
 export function DisplayNameForm({
@@ -8,8 +9,10 @@ export function DisplayNameForm({
 }: {
   currentName: string | null;
 }) {
+  // The name shows in the sidebar (["me"]) and in every people list
+  // (["profiles", ...]), so re-sync both once it's saved.
   const [state, formAction, pending] = useActionState(
-    updateDisplayName,
+    useSyncedAction(updateDisplayName, [["me"], ["profiles"]]),
     undefined,
   );
 

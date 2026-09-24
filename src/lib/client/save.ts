@@ -40,7 +40,7 @@ function describe(err: unknown): string {
   if (!message || /fetch|network|load failed/i.test(message))
     return "Couldn't reach the server — check the connection and try again.";
   // Production builds hide thrown server errors behind a generic message.
-  if (/Server Components render|digest/i.test(message))
+  if (/Server Components render|digest|Minified React error/i.test(message))
     return "Couldn't save that — please try again.";
   return message;
 }

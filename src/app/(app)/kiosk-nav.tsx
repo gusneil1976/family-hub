@@ -112,7 +112,9 @@ export function KioskNav({ isPreviewingKiosk }: { isPreviewingKiosk?: boolean })
       {isPreviewingKiosk && (
         <div className="flex items-center justify-between gap-3 bg-amber-400 px-4 py-2 text-amber-950">
           <span className="text-sm font-semibold">
-            Previewing the kiosk view — nobody else sees this
+            Previewing the kiosk view — nobody else sees this. Anything
+            done on someone else&apos;s behalf (completing, voting, adding as
+            them) only saves on the fridge itself.
           </span>
           <form action={stopKioskPreview}>
             <button

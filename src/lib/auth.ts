@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -10,15 +11,20 @@ export const KIOSK_PREVIEW_COOKIE = "kiosk_preview";
 // Centralizes "who is the current user, and are they admin". Server
 // Components/Actions use this for UX (hiding admin-only buttons, redirecting
 // early); Postgres row-level security is the actual enforcement boundary.
-export async function requireUser() {
+//
+// Wrapped in cache() so the layout and the page share one lookup per request,
+// and uses getClaims (token checked locally against the project's signing key)
+// rather than getUser (a round trip to the Supabase auth server).
+export const requireUser = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
 
-  if (!user) {
+  if (!claims) {
     redirect("/login");
   }
+
+  const user = { id: claims.sub, email: claims.email ?? null };
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -43,7 +49,7 @@ export async function requireUser() {
     isPreviewingKiosk && profile ? { ...profile, is_kiosk: true } : profile;
 
   return { supabase, user, profile: effectiveProfile, isPreviewingKiosk };
-}
+});
 
 export async function requireAdmin() {
   const result = await requireUser();
